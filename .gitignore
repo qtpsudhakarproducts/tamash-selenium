@@ -1,0 +1,7 @@
+target/
+.env
+test-results/
+.tamash-selenium/
+*.class
+.idea/
+*.iml

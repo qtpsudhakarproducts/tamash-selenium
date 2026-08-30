@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.github.qtpsudhakarproducts</groupId>
+  <artifactId>tamash-selenium</artifactId>
+  <version>0.1.0-beta.1</version>
+  <packaging>jar</packaging>
+
+  <name>tamash-selenium</name>
+  <description>Plug-and-play self-healing for Selenium Java (JUnit 5, TestNG, or Cucumber): automatically recovers broken selectors using an AI model (Ollama, OpenAI, Anthropic, Gemini, or a Claude/GitHub Copilot subscription) or a rule-based no-AI provider.</description>
+  <url>https://github.com/qtpsudhakarproducts/tamash-selenium</url>
+
+  <!-- Free to use, including commercially; not open source (no copying/modifying/redistributing
+       without permission). See the LICENSE file at the project root for the full terms. -->
+  <licenses>
+    <license>
+      <name>Custom (free to use, not open source) — see LICENSE file</name>
+      <url>https://github.com/qtpsudhakarproducts/tamash-selenium/blob/main/LICENSE</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>qtpsudhakar</id>
+      <name>Sudhakar Kakunuri</name>
+      <email>sudhakar@qtpsudhakar.com</email>
+      <organization>QtpSudhakar / VibeTestQ</organization>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:https://github.com/qtpsudhakarproducts/tamash-selenium.git</connection>
+    <developerConnection>scm:git:https://github.com/qtpsudhakarproducts/tamash-selenium.git</developerConnection>
+    <url>https://github.com/qtpsudhakarproducts/tamash-selenium</url>
+  </scm>
+
+  <properties>
+    <maven.compiler.source>25</maven.compiler.source>
+    <maven.compiler.target>25</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <selenium.version>4.27.0</selenium.version>
+    <junit.version>6.1.3</junit.version>
+    <json.version>20250517</json.version>
+    <dotenv.version>3.2.0</dotenv.version>
+
+    <!-- Default main class for `mvn exec:java` (the doctor / apply-heals CLIs). -->
+    <exec.mainClass>io.github.qtpsudhakarproducts.tamash.cli.Main</exec.mainClass>
+  </properties>
+
+  <dependencies>
+    <!-- Selenium Manager (bundled since 4.6) provisions the browser drivers, so no WebDriverManager
+         dependency is needed. -->
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-java</artifactId>
+      <version>${selenium.version}</version>
+    </dependency>
+
+    <!-- Request/response bodies for the OpenAI/Ollama/Gemini/Anthropic HTTP providers. Chosen
+         over Jackson/Gson for zero further transitive dependencies and a simple imperative API
+         well suited to hand-built JSON. -->
+    <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+      <version>${json.version}</version>
+    </dependency>
+
+    <!-- Loads .env the same way the TS/Python ports do, from the working directory. -->
+    <dependency>
+      <groupId>io.github.cdimascio</groupId>
+      <artifactId>dotenv-java</artifactId>
+      <version>${dotenv.version}</version>
+    </dependency>
+
+    <!-- Official Anthropic SDK — backs HEALER_PROVIDER=anthropic (API key) and
+         HEALER_PROVIDER=claude-subscription (a Claude Code OAuth token + the oauth beta header).
+         Matches the TS package's use of @anthropic-ai/sdk. Pulls okhttp + kotlin-stdlib. -->
+    <dependency>
+      <groupId>com.anthropic</groupId>
+      <artifactId>anthropic-java</artifactId>
+      <version>2.59.0</version>
+    </dependency>
+
+    <!-- Official GitHub Copilot SDK — backs HEALER_PROVIDER=copilot-subscription. Optional
+         (mirrors the TS package's optional peer dependency on @github/copilot-sdk): it's a preview
+         with a large surface and needs the `copilot` CLI on PATH anyway, so consumers who want
+         this provider add it themselves. CopilotSubscriptionProvider degrades gracefully
+         (NoClassDefFoundError -> a clear warning) when it's absent. -->
+    <dependency>
+      <groupId>com.github</groupId>
+      <artifactId>copilot-sdk-java</artifactId>
+      <version>1.0.13-preview.2</version>
+      <optional>true</optional>
+    </dependency>
+
+    <!-- Default (compile) scope, not test scope: TamashSeleniumExtension in src/main/java
+         implements JUnit 5's extension interfaces, so consumers need this API available even
+         though they're not running *our* tests — only the interfaces are needed here, not the
+         engine. -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>${junit.version}</version>
+    </dependency>
+
+    <!-- Needed to actually run this project's own tests; consumers bring their own
+         junit-jupiter-engine via their normal JUnit 5 test setup. -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- provided (not compile): the auto-registered TestExecutionListener in src/main
+         (io.github.qtpsudhakarproducts.tamash.report.TamashReportListener) needs the launcher API
+         to compile against, but every test runner (Surefire, Gradle, an IDE) already puts a
+         platform launcher on the classpath at test time, so this must not be forced on consumers
+         as a transitive runtime dependency. -->
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-launcher</artifactId>
+      <version>${junit.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- provided: the TestNG integration (io.github.qtpsudhakarproducts.tamash.testng) compiles
+         against these; a TestNG consumer already has TestNG, a JUnit/Cucumber consumer never
+         loads those classes. -->
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>7.11.0</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- provided: same, for the Cucumber integration (io.github.qtpsudhakarproducts.tamash.cucumber). -->
+    <dependency>
+      <groupId>io.cucumber</groupId>
+      <artifactId>cucumber-java</artifactId>
+      <version>7.20.1</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Test scope: this project's own TestNG + Cucumber smoke tests, driven from a JUnit runner. -->
+    <dependency>
+      <groupId>io.cucumber</groupId>
+      <artifactId>cucumber-core</artifactId>
+      <version>7.20.1</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <!-- Ship the agent skill (SKILL.md + references + adapters) inside the JAR under skills/, so
+           a consumer can extract it with:
+           mvn dependency:unpack -Dartifact=io.github.qtpsudhakarproducts:tamash-selenium:<v>
+             -Dmdep.unpack.includes="skills/**" -DoutputDirectory=.claude -->
+      <resource>
+        <directory>${project.basedir}</directory>
+        <targetPath>.</targetPath>
+        <includes>
+          <include>skills/**</include>
+        </includes>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.2</version>
+        <configuration>
+          <!-- The browser / real-AI end-to-end tests are opt-in: they need a local browser (and,
+               for SampleTest, a provider key). Run them explicitly, e.g.
+               `mvn test -Dtest=TamashRuleBasedHealingTest -DHEALER_PROVIDER=tamash`. A `-Dtest=`
+               on the command line overrides these excludes. -->
+          <excludes>
+            <exclude>**/TamashRuleBasedHealingTest.java</exclude>
+            <exclude>**/PageFactoryHealingTest.java</exclude>
+            <exclude>**/WaitHealingTest.java</exclude>
+            <exclude>**/WebUtilHealingTest.java</exclude>
+            <exclude>**/AssertionHealingTest.java</exclude>
+            <exclude>**/PatternsHealingTest.java</exclude>
+            <exclude>**/TamashHintTest.java</exclude>
+            <exclude>**/SampleTest.java</exclude>
+            <exclude>**/FrameworkIntegrationTest.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+      <!-- Runs the CLIs: mvn exec:java -Dexec.args="doctor" / -Dexec.args="apply-heals" -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.5.0</version>
+        <configuration>
+          <mainClass>${exec.mainClass}</mainClass>
+        </configuration>
+      </plugin>
+
+      <!-- Maven Central requires a -sources.jar and -javadoc.jar alongside the main artifact. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>3.4.0</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.12.0</version>
+        <configuration>
+          <!-- Central needs a javadoc jar; don't fail it on missing @param/@return for record
+               components and other cosmetic gaps. Broken {@link} references still fail. -->
+          <doclint>all,-missing</doclint>
+          <quiet>true</quiet>
+        </configuration>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Maven Central requires every artifact (jar, sources, javadoc, pom) to be GPG-signed. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>3.2.8</version>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Publishes to Maven Central via the Sonatype Central Portal. Requires a <server> entry
+           named "central" in ~/.m2/settings.xml with a token generated from central.sonatype.com,
+           and a verified io.github.qtpsudhakarproducts namespace on that account. -->
+      <plugin>
+        <groupId>org.sonatype.central</groupId>
+        <artifactId>central-publishing-maven-plugin</artifactId>
+        <version>0.11.0</version>
+        <extensions>true</extensions>
+        <configuration>
+          <publishingServerId>central</publishingServerId>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

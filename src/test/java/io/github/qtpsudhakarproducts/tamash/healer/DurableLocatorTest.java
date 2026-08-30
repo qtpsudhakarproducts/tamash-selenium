@@ -1,0 +1,122 @@
+package io.github.qtpsudhakarproducts.tamash.healer;
+
+import io.github.qtpsudhakarproducts.tamash.healer.providers.AiSuggestion;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class DurableLocatorTest {
+
+  // A DomSnapshot-shaped tree (same YAML format DomSnapshot.js emits).
+  private static final String SNAPSHOT = """
+      - generic [ref=e1] [box=8,21,1264,139]:
+        - heading "Spike" [ref=e2] [box=8,21,1264,37]
+        - textbox [ref=e3] [box=8,80,177,21]
+        - button "Go" [ref=e4] [box=189,80,34,21]
+        - text: Username
+        - textbox "Username" [ref=e5] [box=292,80,177,21]
+        - textbox "Search here" [ref=e6] [box=473,80,177,21]
+        - link "Read the docs" [ref=e7] [box=654,81,90,17]
+        - button "Delete" [ref=e10] [box=8,119,55,21]
+        - button "Delete" [ref=e11] [box=63,119,55,21]
+        - region "Contact" [ref=e12] [box=8,140,1264,21]:
+          - textbox [ref=e13] [box=8,140,177,21]
+      """;
+
+  @Test
+  void parsesTreeShapeQuirks() {
+    List<DurableLocator.AriaAiNode> nodes = DurableLocator.parseAriaAiTree(SNAPSHOT);
+    assertEquals("generic", nodes.get(0).role());
+    assertEquals(0, nodes.get(0).depth());
+    var heading = nodes.stream().filter(n -> "e2".equals(n.ref())).findFirst().orElseThrow();
+    assertEquals("heading", heading.role());
+    assertEquals("Spike", heading.name());
+    assertTrue(nodes.stream().anyMatch(n -> "Username".equals(n.text()) && n.ref() == null));
+    assertNotNull(nodes.stream().filter(n -> "e5".equals(n.ref())).findFirst().orElseThrow().box());
+  }
+
+  @Test
+  void findRuleBasedMatch_directNamedField() {
+    var nodes = DurableLocator.parseAriaAiTree(SNAPSHOT);
+    AiSuggestion s = DurableLocator.findRuleBasedMatch(nodes, "Search here", "textbox");
+    assertEquals("ref", s.getStrategy());
+    assertEquals("e6", s.getRef());
+  }
+
+  @Test
+  void findRuleBasedMatch_decorativeDuplicateLabelIsNotAmbiguity() {
+    var nodes = DurableLocator.parseAriaAiTree(SNAPSHOT);
+    AiSuggestion s = DurableLocator.findRuleBasedMatch(nodes, "Username", "textbox");
+    assertEquals("ref", s.getStrategy());
+    assertEquals("e5", s.getRef());
+  }
+
+  @Test
+  void findRuleBasedMatch_genuineAmbiguityDeclines() {
+    var nodes = DurableLocator.parseAriaAiTree(SNAPSHOT);
+    assertEquals("none", DurableLocator.findRuleBasedMatch(nodes, "Delete", null).getStrategy());
+  }
+
+  @Test
+  void stripGenericRoleSuffix() {
+    assertEquals("Employee Id", DurableLocator.stripGenericRoleSuffix("Employee Id Textbox"));
+    assertEquals("Submit", DurableLocator.stripGenericRoleSuffix("Submit Button"));
+    assertEquals("Country", DurableLocator.stripGenericRoleSuffix("Country Dropdown"));
+    assertEquals("Already Clean", DurableLocator.stripGenericRoleSuffix("Already Clean"));
+  }
+
+  @Test
+  void inferRoleFromAction() {
+    assertEquals("textbox", DurableLocator.inferRoleFromAction("sendKeys"));
+    assertEquals("checkbox", DurableLocator.inferRoleFromAction("check"));
+    assertNull(DurableLocator.inferRoleFromAction("click"));
+    assertNull(DurableLocator.inferRoleFromAction(null));
+  }
+
+  @Test
+  void generateReplacementCall_seleniumSyntax() {
+    assertEquals("By.id(\"user\")", DurableLocator.generateReplacementCall(AiSuggestion.id("user")));
+    assertEquals("By.name(\"q\")", DurableLocator.generateReplacementCall(AiSuggestion.nameAttr("q")));
+    assertEquals("By.cssSelector(\"input[name='username']\")",
+        DurableLocator.generateReplacementCall(AiSuggestion.css("input[name='username']")));
+    assertEquals("By.xpath(\"//button[@id='go']\")",
+        DurableLocator.generateReplacementCall(AiSuggestion.xpath("//button[@id='go']")));
+    String near = DurableLocator.generateReplacementCall(AiSuggestion.near("Username", "textbox", 1));
+    assertTrue(near.startsWith("By.xpath("), near);
+    assertTrue(near.contains("Username"), near);
+  }
+
+  @Test
+  void toBy_refUsesTamashAttribute() {
+    assertEquals("By.cssSelector: [data-tamash-ref='e9']",
+        DurableLocator.toBy(AiSuggestion.ref("e9", null, null, null)).toString());
+  }
+
+  @Test
+  void isPositionalSelectorText() {
+    assertTrue(DurableLocator.isPositionalSelectorText("//div/span[2]"));
+    assertTrue(DurableLocator.isPositionalSelectorText("div:nth-child(3)"));
+    assertFalse(DurableLocator.isPositionalSelectorText("#username"));
+  }
+
+  @Test
+  void extractScopedSnapshot_singleMatchScopes_multipleDeclines() {
+    String scoped = DurableLocator.extractScopedSnapshot(SNAPSHOT, "Contact");
+    assertNotNull(scoped);
+    assertTrue(scoped.contains("region \"Contact\""));
+    assertTrue(scoped.contains("textbox [ref=e13]"));
+    assertNull(DurableLocator.extractScopedSnapshot(SNAPSHOT, "Delete"));
+    assertNull(DurableLocator.extractScopedSnapshot(SNAPSHOT, "Nonexistent phrase"));
+  }
+
+  @Test
+  void looksAutoGenerated() {
+    assertTrue(DurableLocator.looksAutoGenerated(":r3:"));
+    assertTrue(DurableLocator.looksAutoGenerated("mui-4821"));
+    assertTrue(DurableLocator.looksAutoGenerated("field-12345"));
+    assertFalse(DurableLocator.looksAutoGenerated("username"));
+    assertFalse(DurableLocator.looksAutoGenerated("login-btn"));
+  }
+}

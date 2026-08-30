@@ -1,0 +1,15 @@
+---
+description: Set up and run tamash-selenium's self-healing workflow locally — onboard the project to its standards, then review/apply/verify/land runtime heals. Apply when working on Selenium test files, Page Objects, WebDriver setup, or anything under .tamash-selenium/.
+globs: ["**/*Test.java", "**/*Tests.java", "**/*IT.java", "**/pom/**", "**/pages/**", ".tamash-selenium/**"]
+alwaysApply: false
+---
+
+# tamash-selenium — local self-healing workflow
+
+Run `mvn -q exec:java -Dexec.args="doctor"` first — always, don't assume the project's state from context alone. (Use `./mvnw` if there's a wrapper; run from the module with the `tamash-selenium` dependency.)
+
+- **Any `[FAIL]`/`[WARN]`**, or the `WebDriver` isn't wrapped with `SelfHealingDriver.wrap(...)` / a `tamash-selenium` integration (doctor can't detect the wrap — check the driver setup) → the project hasn't adopted tamash-selenium's standards yet. Extract and follow the onboarding reference:
+  `mvn -q dependency:unpack -Dartifact=io.github.qtpsudhakarproducts:tamash-selenium:0.1.0-beta.1 -Dmdep.unpack.includes="skills/**" -DoutputDirectory=target/tamash-skill` then read `target/tamash-skill/skills/tamash-selenium/references/onboarding.md` (provider setup, wrapping the driver, descriptive locator names, Page Object extraction, the TestNG Surefire trap — each with how to confirm it worked).
+- **All `[OK]`**, driver wrapped, suite has run recently with healing enabled → follow `references/heal.md` from the same extracted path — a gated loop (run → review → apply → verify → land) that only pauses for you at two points: a genuinely ambiguous fix, or anything after a failed verification. Everything else proceeds on its own.
+
+Never commit or open a pull request without asking first, no matter how clean a run was — that gate never auto-continues.
