@@ -278,6 +278,10 @@
         <extensions>true</extensions>
         <configuration>
           <publishingServerId>central</publishingServerId>
+          <!-- Upload + validate only. The deployment then waits in the Central Portal for a
+               human to click "Publish" — a Central release is permanent and cannot be undone. -->
+          <autoPublish>false</autoPublish>
+          <waitUntil>validated</waitUntil>
         </configuration>
       </plugin>
     </plugins>
