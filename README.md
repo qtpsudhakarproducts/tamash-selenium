@@ -29,11 +29,12 @@ failure.
 <dependency>
   <groupId>io.github.qtpsudhakarproducts</groupId>
   <artifactId>tamash-selenium</artifactId>
-  <version>0.1.0-beta.1</version>
+  <version>0.1.0-beta.2</version>
 </dependency>
 ```
 
-Pulls in Selenium 4 transitively. Selenium 4.6+ provisions the browser drivers itself.
+Pulls in Selenium 4 transitively. Selenium 4.6+ provisions the browser drivers itself. Requires
+**Java 21+** at runtime.
 
 ## Step 2: Wrap the driver
 
@@ -70,7 +71,7 @@ With no configuration, healing uses the rule-based **`tamash`** provider — no 
 tokens; it text-matches the element's decoded name against the page's accessibility tree and never
 guesses. Good for well-named suites.
 
-For stronger healing (semantic reasoning, vision fallback), set a provider in a `.env` at your
+For stronger healing (semantic reasoning), set a provider in a `.env` at your
 project root:
 
 | Provider | Auth | Notes |
@@ -81,7 +82,7 @@ project root:
 | `anthropic` | `ANTHROPIC_API_KEY` + `ANTHROPIC_MODEL` | |
 | `gemini` | `GEMINI_API_KEY` + `GEMINI_MODEL` | |
 | `claude-subscription` | `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`) | Bills your Claude subscription |
-| `copilot-subscription` | `com.github:copilot-sdk-java` + `copilot` CLI | Optional dependency; no vision |
+| `copilot-subscription` | `com.github:copilot-sdk-java` + `copilot` CLI | Optional dependency |
 | `tamash` | **nothing** | The default |
 
 ```sh
@@ -99,7 +100,7 @@ properties, and `.env` are all read (that precedence).
 mvn exec:java -Dexec.args="doctor"
 ```
 
-Provider connectivity (a live call), the implicit-wait setting, vision capability, and a scan for
+Provider connectivity (a live call), the implicit-wait setting, and a scan for
 brittle locators bound to non-descriptive names.
 
 ## The optional conveniences
@@ -125,8 +126,7 @@ When `findElement` can't find its element:
 3. **`ref` + durable derivation** — the provider picks the element; a stable `By` is derived for
    it (`By.id` → `By.name` → a `data-testid` / `aria-label` CSS → link text → a structural XPath),
    verified against the live element before it's trusted.
-4. **Vision** — if text healing fails and the model takes images, a screenshot is sent.
-5. **Action recovery** (opt-in, `HEALER_ACTION_RECOVERY_ENABLED=true`) — scroll / JS-click / wait
+4. **Action recovery** (opt-in, `HEALER_ACTION_RECOVERY_ENABLED=true`) — scroll / JS-click / wait
    / dispatch when the element is found but the action is blocked.
 
 Every heal logs `[self-healer] … -> HEALED [provider=…, suggested="By.…"]`.
@@ -191,7 +191,7 @@ references, Cursor / Copilot / `AGENTS.md` adapters) that drives the local
 run → review → `apply-heals` → verify → land loop. Extract it into a project:
 
 ```sh
-mvn dependency:unpack -Dartifact=io.github.qtpsudhakarproducts:tamash-selenium:0.1.0-beta.1 \
+mvn dependency:unpack -Dartifact=io.github.qtpsudhakarproducts:tamash-selenium:0.1.0-beta.2 \
   -Dmdep.unpack.includes="skills/**" -DoutputDirectory=.claude
 ```
 

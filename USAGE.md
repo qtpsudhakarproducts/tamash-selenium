@@ -31,11 +31,11 @@ For a shorter overview see [README.md](README.md). This file is the complete ref
 <dependency>
   <groupId>io.github.qtpsudhakarproducts</groupId>
   <artifactId>tamash-selenium</artifactId>
-  <version>0.1.0-beta.1</version>
+  <version>0.1.0-beta.2</version>
 </dependency>
 ```
 
-Pulls in Selenium 4 and JUnit 5 transitively. Selenium 4.6+ provisions the browser drivers itself.
+Pulls in Selenium 4 transitively. JUnit 5 is an optional dependency (a JUnit 5 project already has it; a TestNG project must not). Selenium 4.6+ provisions the browser drivers itself.
 
 **TestNG and Cucumber** are optional integrations — this package declares `org.testng:testng` and
 `io.cucumber:cucumber-java` as `provided`, so add whichever your project already uses.
@@ -63,7 +63,7 @@ OLLAMA_API_KEY=paste_your_key_here
 | `anthropic` | `ANTHROPIC_API_KEY` + `ANTHROPIC_MODEL` | |
 | `gemini` | `GEMINI_API_KEY` + `GEMINI_MODEL` | |
 | `claude-subscription` | `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`) | Bills your Claude subscription |
-| `copilot-subscription` | `com.github:copilot-sdk-java` + `copilot` CLI signed in | Optional dependency; no vision |
+| `copilot-subscription` | `com.github:copilot-sdk-java` + `copilot` CLI signed in | Optional dependency |
 | `tamash` | **nothing** | Rule-based, no AI, no network, no tokens |
 
 ### No AI at all: `HEALER_PROVIDER=tamash`
@@ -71,7 +71,7 @@ OLLAMA_API_KEY=paste_your_key_here
 Resolves a broken locator by text-matching its decoded description against the page's DOM
 accessibility snapshot, plus the same `near` / `adjacent` structural widening the AI providers use.
 No key, no network, no tokens. The tradeoff: it never guesses — an ambiguous or weak match declines
-rather than picks, and there's no vision or action-recovery fallback. A good fast first line of
+rather than picks, and there is no action-recovery fallback. A good fast first line of
 defense for well-named, Page-Object-style suites.
 
 ---
@@ -132,7 +132,7 @@ broken locator isn't a silent timeout). With `HEALER_PROVIDER=tamash` there's no
 mvn exec:java -Dexec.args="doctor"
 ```
 
-Checks: AI connectivity (actually calls the provider), the implicit-wait setting, vision
+Checks: AI connectivity (actually calls the provider), the implicit-wait setting,
 capability, brittle CSS/XPath locators with a non-descriptive variable name, and locators declared
 inline in test files (`--dir <path>` to scan elsewhere).
 
@@ -318,7 +318,7 @@ with `apply-heals` is what eliminates repeat AI calls in CI.
 Each line records the broken `initialSelector`, the structured `suggestion` (the source of truth
 `apply-heals` re-derives from), and — for quick human review — the rendered `newLocator`
 (`By.name("firstName")`) and `newFindBy` (`@FindBy(name = "firstName")`) forms. A one-shot
-ref/vision heal that couldn't be reduced to a durable selector has no `suggestion`/`newLocator` and
+one-shot ref heal that could not be reduced to a durable selector has no `suggestion`/`newLocator` and
 carries `needsReview: true` with a `reviewNote`.
 
 ---
@@ -388,7 +388,7 @@ three runners; zero overhead when `TAMASH_REPORT` is unset.
 
 | Command | Flags | What it does |
 |---|---|---|
-| `mvn exec:java -Dexec.args="doctor"` | `--dir <path>` | Pre-flight checks: connectivity, implicit wait, vision, locator naming, inline locators. |
+| `mvn exec:java -Dexec.args="doctor"` | `--dir <path>` | Pre-flight checks: connectivity, implicit wait, locator naming, inline locators. |
 | `mvn exec:java -Dexec.args="apply-heals"` | `--dry-run`, `--logs-dir <path>`, `--yes` | Rewrite healed locators into source, write reports + a verify script. |
 
 ---

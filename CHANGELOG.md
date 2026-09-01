@@ -3,6 +3,54 @@
 All notable changes to `tamash-selenium` are documented here. It versions independently of the
 Playwright ports; this first release brings the self-healing engine to Selenium Java.
 
+## [0.1.0-beta.2] - 2026-09-01
+
+Compatibility, cost, and the `apply-heals` last mile.
+
+### Changed
+
+- **Runs on Java 21+** (was Java 25). No API past 21 is used.
+- **`junit-jupiter-api` is now `<optional>`** — a JUnit 5 project already declares it; a TestNG-only
+  project no longer gets it transitively (which made Surefire auto-select the JUnit Platform
+  provider and silently run zero tests). JUnit 5 users: no change. TestNG users: drop the
+  `<exclusion>` you may have added for beta.1.
+
+### Removed
+
+- **The vision fallback.** A full-page screenshot is ~35–40k tokens on GPT-4o (~10× a text heal),
+  it was model-gated, and it could return a confident visual match for something that wasn't
+  semantically the target. Text healing + durable-locator derivation covers the same ground far
+  cheaper. Gone: `Vision*`, `HealProvider.supportsVision` / `suggestSelectorFromImage`, the vision
+  prompts, the `vision=` console field and `used_vision` report field, the "Vision Fallback" doctor
+  row. **Breaking** for anyone implementing `HealProvider` directly (two fewer methods).
+
+### Added / fixed
+
+- **`apply-heals` lands `By`-field Page Objects.** When the failing call site referenced a locator
+  held in a field (`private final By loginBtn = By.id("old"); … driver.findElement(loginBtn)`),
+  there was no `By.x(…)` literal on the recorded line to rewrite. The heal now also records the
+  field's declaration line (`declarationLocation` in `heals.jsonl`) and `apply-heals` rewrites
+  there.
+- **`TAMASH_SOURCE_ROOTS` + sibling-module probing.** A multi-module build where the Page Objects
+  live in one module and the running test in another now resolves element descriptions instead of
+  falling back to the raw selector. `SourceLocations` probes `TAMASH_SOURCE_ROOTS` (comma-separated)
+  and every `../*/src/{main,test}/java`.
+- **Per-test heal attribution without an integration.** The auto-registered JUnit Platform listener
+  sets `CurrentTest` and clears the per-test heal cache / hint around every test, so a bare
+  `SelfHealingDriver.wrap(...)` gets `TamashHeals.forTest(...)`, per-test cache isolation, and
+  grouped report rows — no `@UseTamashSelenium` needed.
+- **Rule-based `tamash`: token-set matching.** When no accessible name is a substring of the
+  description, match a node whose name/nearby text contains every significant word of the phrase in
+  any order — so `"Username field"` matches a `Username` label.
+- **Attribute stacking in durable derivation** — `input[type='password'][name='pwd']` before a
+  structural XPath.
+- **HTTP retry** — one backoff retry (honours `Retry-After`) on 429 / 5xx / timeout for the raw-HTTP
+  providers.
+- **`apply-heals` ignores a `By.x(…)` / `@FindBy` written inside a `//` comment.**
+- **`TAMASH_BROWSER=safari`.**
+
+---
+
 ## [0.1.0-beta.1] - 2026-08-30
 
 First release. Shipped as a beta.
@@ -10,9 +58,8 @@ First release. Shipped as a beta.
 Verified end-to-end against a live app (OrangeHRM) — the text / `ref` / durable-derivation path
 heals identically under all seven providers (`tamash` rule-based, `ollama`, `openai`, `anthropic`,
 `gemini`, `claude-subscription`, `copilot-subscription`); the cache and the wait-context handling
-are exercised the same way. The vision fallback fires and is correctly flagged when text healing
-declines; AI action-recovery is code-complete but lands a fix less often (model-dependent) and
-stays opt-in. `apply-heals` has a known beta limitation for `By`-field Page Objects (see below).
+are exercised the same way. `apply-heals` has a known limitation for `By`-field Page Objects
+(fixed in beta.2).
 
 Parity with the Playwright Java package's self-healing engine, adapted to Selenium's primitives.
 
@@ -122,7 +169,7 @@ Parity with the Playwright Java package's self-healing engine, adapted to Seleni
   `references/heal.md` + Cursor / Copilot / `AGENTS.md` adapters), shipped inside the JAR under
   `skills/`. Drives the local onboard → run → review → apply → verify → land loop for Claude Code,
   Kiro, Cursor, Copilot, and any `AGENTS.md`-reading agent. Extract with
-  `mvn dependency:unpack -Dartifact=io.github.qtpsudhakarproducts:tamash-selenium:0.1.0-beta.1 -Dmdep.unpack.includes="skills/**" -DoutputDirectory=.claude`.
+  `mvn dependency:unpack -Dartifact=io.github.qtpsudhakarproducts:tamash-selenium:0.1.0-beta.2 -Dmdep.unpack.includes="skills/**" -DoutputDirectory=.claude`.
 - **`apply-heals` CLI** — rewrites a `By.xxx("…")` literal or `@FindBy(...)` annotation on the
   recorded line to the confirmed selector, writes Markdown + JSON reports, and generates a
   `verify-heals.sh` / `.cmd`. *Beta limitation:* a locator kept in a separate `private final By`

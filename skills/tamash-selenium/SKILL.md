@@ -37,7 +37,7 @@ No coding agent auto-discovers a skill bundled inside a JAR in the local Maven c
 
 ```bash
 mvn -q dependency:unpack \
-  -Dartifact=io.github.qtpsudhakarproducts:tamash-selenium:0.1.0-beta.1 \
+  -Dartifact=io.github.qtpsudhakarproducts:tamash-selenium:0.1.0-beta.2 \
   -Dmdep.unpack.includes="skills/**" \
   -DoutputDirectory=.claude
 # → .claude/skills/tamash-selenium/SKILL.md
@@ -46,14 +46,14 @@ mvn -q dependency:unpack \
 **Kiro** — identical `SKILL.md` format, different root directory (`-DoutputDirectory=.kiro`):
 
 ```bash
-mvn -q dependency:unpack -Dartifact=io.github.qtpsudhakarproducts:tamash-selenium:0.1.0-beta.1 \
+mvn -q dependency:unpack -Dartifact=io.github.qtpsudhakarproducts:tamash-selenium:0.1.0-beta.2 \
   -Dmdep.unpack.includes="skills/**" -DoutputDirectory=.kiro
 ```
 
 **Cursor** — its own rule format (`.mdc`, with frontmatter Cursor uses to decide when to attach it). Unpack to a temp dir and copy the adapter:
 
 ```bash
-mvn -q dependency:unpack -Dartifact=io.github.qtpsudhakarproducts:tamash-selenium:0.1.0-beta.1 \
+mvn -q dependency:unpack -Dartifact=io.github.qtpsudhakarproducts:tamash-selenium:0.1.0-beta.2 \
   -Dmdep.unpack.includes="skills/**" -DoutputDirectory=target/tamash-skill
 mkdir -p .cursor/rules
 cp target/tamash-skill/skills/tamash-selenium/adapters/cursor-tamash-selenium.mdc .cursor/rules/
@@ -62,7 +62,7 @@ cp target/tamash-skill/skills/tamash-selenium/adapters/cursor-tamash-selenium.md
 **GitHub Copilot** — append (or create) its single instructions file:
 
 ```bash
-mvn -q dependency:unpack -Dartifact=io.github.qtpsudhakarproducts:tamash-selenium:0.1.0-beta.1 \
+mvn -q dependency:unpack -Dartifact=io.github.qtpsudhakarproducts:tamash-selenium:0.1.0-beta.2 \
   -Dmdep.unpack.includes="skills/**" -DoutputDirectory=target/tamash-skill
 mkdir -p .github
 cat target/tamash-skill/skills/tamash-selenium/adapters/copilot-instructions-tamash-selenium.md >> .github/copilot-instructions.md

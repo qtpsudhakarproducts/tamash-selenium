@@ -47,8 +47,30 @@ class HealCacheTest {
   void clear_wipesBoth() {
     HealCache.recordPositive(By.id("a"), "/p", By.id("b"), "By.id(\"b\")", AiSuggestion.id("b"));
     HealCache.recordDeclined(By.id("c"), "dom");
+    HealCache.recordFailing(By.id("d"));
     HealCache.clear();
     assertNull(HealCache.positive(By.id("a"), "/p"));
     assertFalse(HealCache.recentlyDeclined(By.id("c"), "dom"));
+    assertEquals(0, HealCache.failCount(By.id("d")));
+  }
+
+  @Test
+  void failCount_countsPerRunAndPeeksWithoutIncrementing() {
+    By broken = By.name("first_name");
+    assertEquals(0, HealCache.failCount(broken));
+    assertEquals(1, HealCache.recordFailing(broken));
+    assertEquals(2, HealCache.recordFailing(broken));
+    assertEquals(2, HealCache.failCount(broken));   // peek — no increment
+    assertEquals(2, HealCache.failCount(broken));
+  }
+
+  @Test
+  void everHealed_tracksWhetherALocatorHealedThisRun_anyPage() {
+    By broken = By.name("first_name");
+    assertFalse(HealCache.everHealed(broken));
+    HealCache.recordPositive(broken, "/pim/addEmployee", By.name("firstName"), "By.name(\"firstName\")",
+        AiSuggestion.nameAttr("firstName"));
+    assertTrue(HealCache.everHealed(broken));                       // page-independent
+    assertNull(HealCache.positive(broken, "/some/other/page"));     // but the positive hit is page-keyed
   }
 }
