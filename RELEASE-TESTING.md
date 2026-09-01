@@ -132,8 +132,23 @@ Kicked off closing the gap to `tamash-playwright`'s verification bar (see roadma
   `SelfHealingDemoTest` (both flavours) now guards its heal-metadata assertions behind
   `Healer.isHealingEnabled()` so `verify-heals` passes.
 - Unit ~90, `mvn test -Pbrowser` ~123, all green.
-- Still open: run the library + sample CI for real (needs the `apply-heals` fix published); hand
-  the skill to unbriefed agents; `ollama-local` live re-check.
+- **Library CI ran for real, first time, fully green** (run `33528061152`, pushed as
+  `0.1.0-beta.4`): `mvn test (unit + rule-based e2e)`, `package + doctor smoke`, and
+  `Real-AI heal` for anthropic/gemini/openai — including `ActionRecoveryTest` inside the
+  anthropic job (`actionRecovery=yes`, recovered).
+- Repo relicensed **Apache License 2.0** and made **public**:
+  https://github.com/qtpsudhakarproducts/tamash-selenium
+- `0.1.0-beta.4` deployed and published to Maven Central (deployment
+  `08acb36f-b5ea-47bc-af29-24f91a3a11d2`).
+- **Sample repo CI ran for real, first time, fully green** (run `33528507241`): `TestNG`,
+  `JUnit 5 + Cucumber`, `Heal demo` for openai/anthropic/gemini/ollama (all 4 — the ollama leg
+  is new), and the new **`apply-heals round trip`** job — heal → `apply-heals --yes` → verify
+  with healing off, all green. (Still on the published `0.1.0-beta.3`, so the verify step ran
+  the workflow's fallback command rather than a generated `verify-heals.sh` — the underlying
+  round trip is proven either way; re-verify with the real script once `0.1.0-beta.4` resolves.)
+- Still open: bump the sample's dependency pin to `0.1.0-beta.4` once it resolves on Central and
+  re-run to confirm the generated `verify-heals.sh` path specifically; hand the skill to
+  unbriefed agents; `ollama-local` live re-check.
 - **Non-Chrome browsers (Firefox/Edge/Safari) are explicitly out of scope for the test suite**
   (user decision, 2026-09-01) — Chrome is the one covered configuration. The lifecycle still
   supports `TAMASH_BROWSER=firefox|edge|safari`; those branches are just untested.
