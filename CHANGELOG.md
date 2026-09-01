@@ -3,6 +3,22 @@
 All notable changes to `tamash-selenium` are documented here. It versions independently of the
 Playwright ports; this first release brings the self-healing engine to Selenium Java.
 
+## [0.1.0-beta.3] - 2026-09-01
+
+Gemini reliability.
+
+- **Gemini: thinking off by default.** Gemini 2.5+/3.x Flash think by default, so a ~5k-token
+  selector request took 15–30s and blew the healer's per-call timeout. It now sends
+  `reasoning_effort: low` (healing is structured extraction, not reasoning) — calls drop to ~2–3s.
+  Set `GEMINI_THINKING=on` to keep the model default.
+- **Per-call timeout 10s → 20s** (`TAMASH_ACTION_TIMEOUT_MS` still overrides).
+- **Smarter HTTP retry.** A bare `429` is a per-minute quota — retrying with a 500 ms backoff just
+  burned the timeout. Now: retry once, and only when the server named a short delay
+  (`Retry-After` header or Gemini's `retryDelay` body field, ≤ 8s). 5xx gets one 1s retry; a
+  timeout gets one immediate retry.
+
+---
+
 ## [0.1.0-beta.2] - 2026-09-01
 
 Compatibility, cost, and the `apply-heals` last mile.
@@ -174,7 +190,7 @@ Parity with the Playwright Java package's self-healing engine, adapted to Seleni
   `references/heal.md` + Cursor / Copilot / `AGENTS.md` adapters), shipped inside the JAR under
   `skills/`. Drives the local onboard → run → review → apply → verify → land loop for Claude Code,
   Kiro, Cursor, Copilot, and any `AGENTS.md`-reading agent. Extract with
-  `mvn dependency:unpack -Dartifact=com.vibetestq.qtpsudhakar:tamash-selenium:0.1.0-beta.2 -Dmdep.unpack.includes="skills/**" -DoutputDirectory=.claude`.
+  `mvn dependency:unpack -Dartifact=com.vibetestq.qtpsudhakar:tamash-selenium:0.1.0-beta.3 -Dmdep.unpack.includes="skills/**" -DoutputDirectory=.claude`.
 - **`apply-heals` CLI** — rewrites a `By.xxx("…")` literal or `@FindBy(...)` annotation on the
   recorded line to the confirmed selector, writes Markdown + JSON reports, and generates a
   `verify-heals.sh` / `.cmd`. *Beta limitation:* a locator kept in a separate `private final By`

@@ -8,7 +8,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Map;
-import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /** Shared HTTP POST for the raw-HTTP providers (OpenAI / Gemini / Ollama / Anthropic /
  *  claude-subscription). Returns the parsed JSON body, or null on any non-2xx / error, logging a
@@ -18,9 +19,11 @@ final class Http {
 
   private static final HttpClient CLIENT = HttpClient.newHttpClient();
 
-  /** Retried once, with a short backoff, on the transient statuses (rate limit / overloaded /
-   *  gateway) — a free-tier key mid-heal-batch or a briefly overloaded model shouldn't fail a run. */
-  private static final Set<Integer> RETRYABLE = Set.of(429, 500, 502, 503, 504);
+  /** A rate-limited call is only worth waiting on if the server tells us the window is short —
+   *  otherwise it's a per-minute quota and retrying would just burn the healer's timeout. */
+  private static final long MAX_RETRY_WAIT_MS = 8_000;
+
+  private static final Pattern RETRY_DELAY_SECONDS = Pattern.compile("\"retryDelay\"\\s*:\\s*\"(\\d+)s\"");
 
   static JSONObject postJson(String label, String url, Map<String, String> headers, JSONObject body, double timeoutMs) {
     HttpRequest.Builder rb = HttpRequest.newBuilder()
@@ -31,24 +34,34 @@ final class Http {
     headers.forEach(rb::header);
     HttpRequest request = rb.build();
 
-    int attempts = 0;
+    boolean retried = false;
     while (true) {
-      attempts++;
       try {
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() >= 300) {
-          if (RETRYABLE.contains(response.statusCode()) && attempts < 3) {
-            sleep(response, attempts);
+        int status = response.statusCode();
+        if (status < 300) {
+          return new JSONObject(response.body());
+        }
+        // 5xx: one quick retry (a brief overload). 429: retry once only if the server named a
+        // short delay; a bare 429 is a per-minute quota — fail fast rather than stall the heal.
+        if (!retried) {
+          Long waitMs = null;
+          if (status >= 500 && status <= 504) {
+            waitMs = 1_000L;
+          } else if (status == 429) {
+            waitMs = retryAfterMs(response);
+          }
+          if (waitMs != null && waitMs <= MAX_RETRY_WAIT_MS) {
+            retried = true;
+            sleep(waitMs);
             continue;
           }
-          System.out.println("[self-healer] " + label + " request failed: " + response.statusCode()
-              + " " + firstLine(response.body()));
-          return null;
         }
-        return new JSONObject(response.body());
+        System.out.println("[self-healer] " + label + " request failed: " + status + " " + firstLine(response.body()));
+        return null;
       } catch (java.net.http.HttpTimeoutException e) {
-        if (attempts < 3) {
-          sleep(null, attempts);
+        if (!retried) {
+          retried = true;
           continue;
         }
         System.out.println("[self-healer] " + label + " provider error: request timed out");
@@ -60,14 +73,25 @@ final class Http {
     }
   }
 
-  private static void sleep(HttpResponse<String> response, int attempt) {
-    long ms = 500L * attempt;
-    if (response != null) {
-      ms = response.headers().firstValue("retry-after")
-          .map(v -> { try { return Long.parseLong(v.trim()) * 1000L; } catch (Exception e) { return null; } })
-          .filter(v -> v != null && v <= 15_000)
-          .orElse(ms);
+  /** Milliseconds to wait per the {@code Retry-After} header or Gemini's {@code retryDelay} body
+   *  field, or null when the server gave no hint. */
+  private static Long retryAfterMs(HttpResponse<String> response) {
+    Long header = response.headers().firstValue("retry-after")
+        .map(v -> { try { return Long.parseLong(v.trim()) * 1000L; } catch (Exception e) { return null; } })
+        .orElse(null);
+    if (header != null) {
+      return header;
     }
+    if (response.body() != null) {
+      Matcher m = RETRY_DELAY_SECONDS.matcher(response.body());
+      if (m.find()) {
+        return Long.parseLong(m.group(1)) * 1000L;
+      }
+    }
+    return null;
+  }
+
+  private static void sleep(long ms) {
     try {
       Thread.sleep(ms);
     } catch (InterruptedException ie) {

@@ -12,10 +12,20 @@ import java.util.Map;
 public final class OpenAiCompatibleProvider {
   private OpenAiCompatibleProvider() {}
 
-  private static final double DEFAULT_TIMEOUT_MS = 15000.0;
+  private static final double DEFAULT_TIMEOUT_MS = 20000.0;
 
   public static HealProvider create(String name, String chatCompletionsUrl, Map<String, String> authHeaders,
                                     String model) {
+    return create(name, chatCompletionsUrl, authHeaders, model, false);
+  }
+
+  /** @param disableThinking send {@code reasoning_effort: "low"} — Gemini 2.5+/3.x Flash think at a
+   *   large budget by default and a 5k-token selector request then takes 15-30s; healing is
+   *   structured extraction, not reasoning, so the minimum budget cuts each call to a few seconds.
+   *   ({@code "none"} 400s on Gemini's OpenAI-compat surface; {@code "low"} is the floor.) Not sent
+   *   for OpenAI, which 400s on the field for gpt-4o etc. */
+  public static HealProvider create(String name, String chatCompletionsUrl, Map<String, String> authHeaders,
+                                    String model, boolean disableThinking) {
     return new HealProvider() {
       @Override public String getName() { return name; }
 
@@ -48,10 +58,14 @@ public final class OpenAiCompatibleProvider {
       }
 
       private JSONObject baseBody() {
-        return new JSONObject()
+        JSONObject b = new JSONObject()
             .put("model", model)
             .put("temperature", 0)
             .put("response_format", new JSONObject().put("type", "json_object"));
+        if (disableThinking) {
+          b.put("reasoning_effort", "low");
+        }
+        return b;
       }
 
       private double timeout(double requested) {

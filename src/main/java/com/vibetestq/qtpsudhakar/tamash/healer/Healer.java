@@ -28,7 +28,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public final class Healer {
   private Healer() {}
 
-  public static final double DEFAULT_TIMEOUT_MS = 10000.0;
+  public static final double DEFAULT_TIMEOUT_MS = 20000.0;
 
   private static final List<SelfHealingReport> REPORTS = new CopyOnWriteArrayList<>();
   private static final java.util.concurrent.atomic.AtomicInteger COUNTER = new java.util.concurrent.atomic.AtomicInteger();

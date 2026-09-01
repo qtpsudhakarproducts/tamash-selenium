@@ -29,7 +29,7 @@ failure.
 <dependency>
   <groupId>com.vibetestq.qtpsudhakar</groupId>
   <artifactId>tamash-selenium</artifactId>
-  <version>0.1.0-beta.2</version>
+  <version>0.1.0-beta.3</version>
 </dependency>
 ```
 
@@ -191,7 +191,7 @@ references, Cursor / Copilot / `AGENTS.md` adapters) that drives the local
 run → review → `apply-heals` → verify → land loop. Extract it into a project:
 
 ```sh
-mvn dependency:unpack -Dartifact=com.vibetestq.qtpsudhakar:tamash-selenium:0.1.0-beta.2 \
+mvn dependency:unpack -Dartifact=com.vibetestq.qtpsudhakar:tamash-selenium:0.1.0-beta.3 \
   -Dmdep.unpack.includes="skills/**" -DoutputDirectory=.claude
 ```
 

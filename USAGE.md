@@ -31,7 +31,7 @@ For a shorter overview see [README.md](README.md). This file is the complete ref
 <dependency>
   <groupId>com.vibetestq.qtpsudhakar</groupId>
   <artifactId>tamash-selenium</artifactId>
-  <version>0.1.0-beta.2</version>
+  <version>0.1.0-beta.3</version>
 </dependency>
 ```
 
@@ -61,7 +61,7 @@ OLLAMA_API_KEY=paste_your_key_here
 | `ollama-local` | `OLLAMA_LOCAL_MODEL` (key optional) | Your own `ollama serve` / internal deployment |
 | `openai` | `OPENAI_API_KEY` + `OPENAI_MODEL` | |
 | `anthropic` | `ANTHROPIC_API_KEY` + `ANTHROPIC_MODEL` | |
-| `gemini` | `GEMINI_API_KEY` + `GEMINI_MODEL` | |
+| `gemini` | `GEMINI_API_KEY` + `GEMINI_MODEL` | use a `-flash-lite` model |
 | `claude-subscription` | `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`) | Bills your Claude subscription |
 | `copilot-subscription` | `com.github:copilot-sdk-java` + `copilot` CLI signed in | Optional dependency |
 | `tamash` | **nothing** | Rule-based, no AI, no network, no tokens |
@@ -371,7 +371,8 @@ three runners; zero overhead when `TAMASH_REPORT` is unset.
 | `OLLAMA_LOCAL_MODEL` / `OLLAMA_LOCAL_BASE_URL` / `OLLAMA_LOCAL_API_KEY` | — / `http://localhost:11434` / — | Self-hosted Ollama. Key optional. |
 | `OPENAI_MODEL` / `OPENAI_API_KEY` | — | OpenAI. |
 | `ANTHROPIC_MODEL` / `ANTHROPIC_API_KEY` | — | Anthropic (Claude), API key. |
-| `GEMINI_MODEL` / `GEMINI_API_KEY` | — | Google Gemini. |
+| `GEMINI_MODEL` / `GEMINI_API_KEY` | — | Google Gemini. Use a `-flash-lite` model. |
+| `GEMINI_THINKING` | `off` | `on` restores Gemini's default thinking budget (off sends `reasoning_effort: low`). |
 | `CLAUDE_CODE_OAUTH_TOKEN` / `CLAUDE_SUBSCRIPTION_MODEL` | — / `claude-haiku-4-5` | `claude-subscription`. |
 | `COPILOT_SUBSCRIPTION_MODEL` | — | `copilot-subscription`. |
 | `HEALER_ACTION_RECOVERY_ENABLED` | `false` | Opt-in AI action recovery (`scroll` / `force` / `wait` / `dispatch`). |

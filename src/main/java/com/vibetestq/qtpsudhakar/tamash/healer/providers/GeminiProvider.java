@@ -16,10 +16,14 @@ public final class GeminiProvider {
     }
     String baseUrl = OpenAiProvider.envOrDefault(
         "GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai");
+    // GEMINI_THINKING=on keeps the model's default thinking budget; off (default) sends
+    // reasoning_effort:none so a selector lookup returns in a few seconds instead of 15-30.
+    boolean disableThinking = !"on".equalsIgnoreCase(String.valueOf(Env.get("GEMINI_THINKING")));
     return OpenAiCompatibleProvider.create(
         "gemini:" + model,
         baseUrl + "/chat/completions",
         Map.of("authorization", "Bearer " + apiKey),
-        model);
+        model,
+        disableThinking);
   }
 }
