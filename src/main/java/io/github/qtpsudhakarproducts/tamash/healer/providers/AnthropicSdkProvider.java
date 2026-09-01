@@ -3,10 +3,7 @@ package io.github.qtpsudhakarproducts.tamash.healer.providers;
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.okhttp.AnthropicOkHttpClient;
 import com.anthropic.core.RequestOptions;
-import com.anthropic.models.messages.Base64ImageSource;
 import com.anthropic.models.messages.ContentBlock;
-import com.anthropic.models.messages.ContentBlockParam;
-import com.anthropic.models.messages.ImageBlockParam;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
 import com.anthropic.models.messages.TextBlockParam;
@@ -36,7 +33,7 @@ public final class AnthropicSdkProvider {
    * @param apiKey        set for the API-key {@code anthropic} provider (else null)
    * @param authToken     set for {@code claude-subscription} — a {@code CLAUDE_CODE_OAUTH_TOKEN} (else null)
    */
-  public static HealProvider create(String name, String apiKey, String authToken, String model, String vendorForVision) {
+  public static HealProvider create(String name, String apiKey, String authToken, String model) {
     boolean oauth = authToken != null && !authToken.isEmpty();
     AnthropicOkHttpClient.Builder cb = AnthropicOkHttpClient.builder();
     if (oauth) {
@@ -45,15 +42,13 @@ public final class AnthropicSdkProvider {
       cb.apiKey(apiKey);
     }
     final AnthropicClient client = cb.build();
-    boolean supportsVision = VisionModels.isVisionCapableModel("anthropic", model);
 
     return new HealProvider() {
       @Override public String getName() { return name; }
-      @Override public boolean supportsVision() { return supportsVision; }
 
       @Override
       public ProviderResult suggestSelector(SuggestSelectorInput input) {
-        Message msg = call(SYSTEM(Prompt.SYSTEM_PROMPT), Prompt.buildUserPrompt(input), null, input.getTimeoutMs(), "");
+        Message msg = call(SYSTEM(Prompt.SYSTEM_PROMPT), Prompt.buildUserPrompt(input), input.getTimeoutMs(), "");
         if (msg == null) return null;
         String text = firstText(msg);
         if (text == null) return null;
@@ -62,20 +57,9 @@ public final class AnthropicSdkProvider {
       }
 
       @Override
-      public VisionProviderResult suggestSelectorFromImage(SuggestElementFromImageInput input) {
-        Message msg = call(SYSTEM(Prompt.VISION_SYSTEM_PROMPT), Prompt.buildVisionUserPrompt(input),
-            input.getImageBase64(), input.getTimeoutMs(), " vision");
-        if (msg == null) return null;
-        String text = firstText(msg);
-        if (text == null) return null;
-        VisionPoint p = Prompt.parseVisionSuggestion(text);
-        return p == null ? null : new VisionProviderResult(p, usage(msg));
-      }
-
-      @Override
       public ActionTacticResult suggestActionTactic(SuggestActionTacticInput input) {
         Message msg = call(SYSTEM(Prompt.ACTION_RECOVERY_SYSTEM_PROMPT), Prompt.buildActionRecoveryUserPrompt(input),
-            null, input.getTimeoutMs(), " action-recovery");
+            input.getTimeoutMs(), " action-recovery");
         if (msg == null) return null;
         String text = firstText(msg);
         if (text == null) return null;
@@ -89,24 +73,15 @@ public final class AnthropicSdkProvider {
             : List.of(TextBlockParam.of(prompt));
       }
 
-      private Message call(List<TextBlockParam> system, String userText, String imageBase64, double requestedTimeout,
-                           String labelSuffix) {
+      private Message call(List<TextBlockParam> system, String userText, double requestedTimeout, String labelSuffix) {
         try {
           MessageCreateParams.Builder b = MessageCreateParams.builder()
               .model(model)
               .maxTokens(1024)
-              .systemOfTextBlockParams(system);
+              .systemOfTextBlockParams(system)
+              .addUserMessage(userText);
           if (oauth) {
             b.putAdditionalHeader("anthropic-beta", OAUTH_BETA);
-          }
-          if (imageBase64 == null) {
-            b.addUserMessage(userText);
-          } else {
-            // Image before text, per Anthropic's own single-image guidance.
-            b.addUserMessageOfBlockParams(List.of(
-                ContentBlockParam.ofImage(ImageBlockParam.of(ImageBlockParam.Source.ofBase64(
-                    Base64ImageSource.builder().data(imageBase64).mediaType(Base64ImageSource.MediaType.IMAGE_PNG).build()))),
-                ContentBlockParam.ofText(userText)));
           }
           double t = requestedTimeout > 0 ? requestedTimeout : DEFAULT_TIMEOUT_MS;
           return client.messages().create(b.build(),

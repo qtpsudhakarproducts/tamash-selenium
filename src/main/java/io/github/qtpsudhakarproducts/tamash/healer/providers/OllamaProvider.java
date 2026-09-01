@@ -47,15 +47,12 @@ public final class OllamaProvider {
   }
 
   private static HealProvider build(String name, String url, Map<String, String> headers, String model) {
-    boolean supportsVision = VisionModels.isVisionCapableModel("ollama", model);
-
     return new HealProvider() {
       @Override public String getName() { return name; }
-      @Override public boolean supportsVision() { return supportsVision; }
 
       @Override
       public ProviderResult suggestSelector(SuggestSelectorInput input) {
-        JSONObject payload = post(Prompt.SYSTEM_PROMPT, Prompt.buildUserPrompt(input), null, timeout(input.getTimeoutMs()), "");
+        JSONObject payload = post(Prompt.SYSTEM_PROMPT, Prompt.buildUserPrompt(input), timeout(input.getTimeoutMs()), "");
         if (payload == null) return null;
         String content = content(payload);
         if (content == null) return null;
@@ -64,20 +61,9 @@ public final class OllamaProvider {
       }
 
       @Override
-      public VisionProviderResult suggestSelectorFromImage(SuggestElementFromImageInput input) {
-        JSONObject payload = post(Prompt.VISION_SYSTEM_PROMPT, Prompt.buildVisionUserPrompt(input),
-            input.getImageBase64(), timeout(input.getTimeoutMs()), " vision");
-        if (payload == null) return null;
-        String content = content(payload);
-        if (content == null) return null;
-        VisionPoint p = Prompt.parseVisionSuggestion(content);
-        return p == null ? null : new VisionProviderResult(p, usage(payload));
-      }
-
-      @Override
       public ActionTacticResult suggestActionTactic(SuggestActionTacticInput input) {
         JSONObject payload = post(Prompt.ACTION_RECOVERY_SYSTEM_PROMPT, Prompt.buildActionRecoveryUserPrompt(input),
-            null, timeout(input.getTimeoutMs()), " action-recovery");
+            timeout(input.getTimeoutMs()), " action-recovery");
         if (payload == null) return null;
         String content = content(payload);
         if (content == null) return null;
@@ -85,11 +71,7 @@ public final class OllamaProvider {
         return tactic == null ? null : new ActionTacticResult(tactic, usage(payload));
       }
 
-      private JSONObject post(String system, String userText, String imageBase64, double t, String labelSuffix) {
-        JSONObject userMsg = new JSONObject().put("role", "user").put("content", userText);
-        if (imageBase64 != null) {
-          userMsg.put("images", new JSONArray().put(imageBase64));
-        }
+      private JSONObject post(String system, String userText, double t, String labelSuffix) {
         JSONObject body = new JSONObject()
             .put("model", model)
             .put("stream", false)
@@ -97,7 +79,7 @@ public final class OllamaProvider {
             .put("options", new JSONObject().put("temperature", 0))
             .put("messages", new JSONArray()
                 .put(new JSONObject().put("role", "system").put("content", system))
-                .put(userMsg));
+                .put(new JSONObject().put("role", "user").put("content", userText)));
         return Http.postJson(name + labelSuffix, url, headers, body, t);
       }
 

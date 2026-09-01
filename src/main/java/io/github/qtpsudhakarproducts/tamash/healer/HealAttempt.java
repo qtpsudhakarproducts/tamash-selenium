@@ -3,13 +3,13 @@ package io.github.qtpsudhakarproducts.tamash.healer;
 import org.json.JSONObject;
 
 /**
- * One entry per meaningful recovery attempt (cache / ref / text / vision / action-recovery), in
+ * One entry per meaningful recovery attempt (cache / ref / text / action-recovery), in
  * the order they ran. Unlike {@code failureStage}/{@code suggestedSelector} (which only ever
  * reflect the LAST attempt), this list is never overwritten — see src/healer/index.ts's
  * {@code HealAttempt}.
  */
 public final class HealAttempt {
-  public String method;            // cache | ref | text | vision | action-recovery
+  public String method;            // cache | ref | text | action-recovery
   public String provider;
   public String suggestedSelector;
   public boolean succeeded;

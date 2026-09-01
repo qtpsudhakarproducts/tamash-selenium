@@ -3,7 +3,7 @@ package io.github.qtpsudhakarproducts.tamash.healer.providers;
 /**
  * A fixed, auditable menu — the AI only ever picks among these, it never invents a new way to
  * interact with the page. Used only after a locator has already been successfully healed (via
- * text or vision) but replaying the original action on it still failed for a non-selector reason
+ * text) but replaying the original action on it still failed for a non-selector reason
  * (covered, needs scrolling, mid-animation, ...).
  */
 public enum ActionTactic {

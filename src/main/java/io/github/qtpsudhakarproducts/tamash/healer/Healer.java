@@ -5,11 +5,8 @@ import io.github.qtpsudhakarproducts.tamash.healer.providers.AiSuggestion;
 import io.github.qtpsudhakarproducts.tamash.healer.providers.HealProvider;
 import io.github.qtpsudhakarproducts.tamash.healer.providers.ProviderFactory;
 import io.github.qtpsudhakarproducts.tamash.healer.providers.ProviderResult;
-import io.github.qtpsudhakarproducts.tamash.healer.providers.SuggestElementFromImageInput;
 import io.github.qtpsudhakarproducts.tamash.healer.providers.SuggestSelectorInput;
 import io.github.qtpsudhakarproducts.tamash.healer.providers.TokenUsage;
-import io.github.qtpsudhakarproducts.tamash.healer.providers.VisionPoint;
-import io.github.qtpsudhakarproducts.tamash.healer.providers.VisionProviderResult;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -360,10 +357,6 @@ public final class Healer {
     FAILURE_STAGE_MESSAGES.put("ai_declined", "The AI found nothing in the snapshot plausibly matching the description.");
     FAILURE_STAGE_MESSAGES.put("unbuildable_suggestion", "The AI's suggested strategy couldn't be turned into a locator.");
     FAILURE_STAGE_MESSAGES.put("replay_failed", "The AI suggested a replacement locator, but acting on it failed too.");
-    FAILURE_STAGE_MESSAGES.put("vision_provider_error", "The vision-capable AI call itself failed or returned nothing usable.");
-    FAILURE_STAGE_MESSAGES.put("vision_declined", "The AI found nothing in the screenshot plausibly matching the description.");
-    FAILURE_STAGE_MESSAGES.put("vision_unresolvable", "The AI pointed at a location in the screenshot, but no real element could be resolved there.");
-    FAILURE_STAGE_MESSAGES.put("vision_replay_failed", "The AI located a visual match, but acting on it failed too.");
     FAILURE_STAGE_MESSAGES.put("action_recovery_declined", "The element was found, but none of the known recovery tactics would plausibly help.");
     FAILURE_STAGE_MESSAGES.put("action_recovery_failed", "A recovery tactic was attempted, but the action still could not be completed.");
   }
@@ -414,7 +407,6 @@ public final class Healer {
     TokenUsage usage = null;
     String suggestedSelector = null;
     String providerName = null;
-    boolean usedVision = false;
     boolean usedActionRecovery = false;
     boolean usedCache = false;
     AiSuggestion capturedSuggestion = null;
@@ -548,28 +540,6 @@ public final class Healer {
             usedActionRecovery = usedActionRecovery || st.usedActionRecovery;
             failureStage = st.healing != null ? null : st.failureStage;
           }
-
-          // --- vision ---
-          if (healing == null && provider.supportsVision()) {
-            VisionOutcome vo = tryVisionRecovery(provider, ctx, c, callArgs, timeoutMs, plainReplay);
-            if (vo.usage != null) usage = TokenUsage.plus(usage, vo.usage);
-            if (vo.healing != null) {
-              healing = vo.healing;
-              capturedSuggestion = vo.resolvedSuggestion;
-              usedVision = vo.resolvedSuggestion == null;
-              initialSelector = vo.initialSelector != null ? vo.initialSelector : initialSelector;
-              needsReview = vo.needsReview;
-              reviewNote = vo.reviewNote;
-              failureStage = null;
-              attempts.add(HealAttempt.of("vision").provider(provider.getName()).succeeded(true)
-                  .suggested(vo.healing.suggestedSelector()));
-            } else if (vo.stage != null) {
-              usedVision = true;
-              failureStage = vo.stage;
-              attempts.add(HealAttempt.of("vision").provider(provider.getName()).succeeded(false)
-                  .stage(vo.stage).error(FAILURE_STAGE_MESSAGES.get(vo.stage)));
-            }
-          }
         }
       }
     } finally {
@@ -601,7 +571,6 @@ public final class Healer {
     report.warning = warning;
     report.suggestedSelector = healing != null ? healing.suggestedSelector() : suggestedSelector;
     report.failureStage = failureStage;
-    report.usedVision = usedVision;
     report.usedActionRecovery = usedActionRecovery;
     report.initialSelector = initialSelector;
     report.needsReview = needsReview;
@@ -654,8 +623,7 @@ public final class Healer {
    *  suppressing on the next identical-DOM poll. Not for infra states (disabled/no_provider). */
   private static boolean attemptHealingWasTried(String stage) {
     return stage != null && Set.of("ai_declined", "unbuildable_suggestion", "replay_failed",
-        "vision_declined", "vision_unresolvable", "vision_replay_failed", "no_snapshot",
-        "provider_error").contains(stage);
+        "no_snapshot", "provider_error").contains(stage);
   }
 
   static String pageKeyOf(WebDriver driver) {
@@ -821,91 +789,12 @@ public final class Healer {
     }
   }
 
-  // ---- vision recovery --------------------------------------
-
-  static final class VisionOutcome {
-    Recovery healing;
-    TokenUsage usage;
-    String stage;
-    AiSuggestion resolvedSuggestion;
-    String initialSelector;
-    Boolean needsReview;
-    String reviewNote;
-  }
-
-  private static VisionOutcome tryVisionRecovery(HealProvider provider, PageContext ctx, HealContext c,
-                                                 Object[] callArgs, double timeoutMs, Replayer plainReplay) {
-    VisionOutcome out = new VisionOutcome();
-    ctx.enterFrame();
-    try {
-      Vision.VisionCapture capture = Vision.captureElementForVision(ctx, timeoutMs);
-      if (capture == null) {
-        return out;
-      }
-      VisionProviderResult result = provider.suggestSelectorFromImage(
-          new SuggestElementFromImageInput(c.action, c.description, capture.imageBase64(), timeoutMs));
-      if (result == null) {
-        out.stage = "vision_provider_error";
-        return out;
-      }
-      out.usage = result.getUsage();
-      VisionPoint point = result.getPoint();
-      if (!point.isFound()) {
-        out.stage = "vision_declined";
-        return out;
-      }
-      Vision.ResolvedVisionPoint resolved = Vision.resolveElementAtVisionPoint(ctx, point, capture.box(),
-          capture.scrollX(), capture.scrollY(), timeoutMs);
-      if (resolved == null) {
-        out.stage = "vision_unresolvable";
-        return out;
-      }
-      WebElement el = ctx.findOrNull(Vision.visionTagSelector(resolved.id()));
-      if (el == null) {
-        out.stage = "vision_unresolvable";
-        return out;
-      }
-      try {
-        Object replayResult = plainReplay.replay(el);
-        String freshSnapshot = DomSnapshot.capture(ctx.driver());
-        DerivedDurableLocator derived = deriveDurableLocator(ctx, el, c.action,
-            freshSnapshot != null ? new TreeContext(freshSnapshot, refCandidates(freshSnapshot, resolved), null, null) : null,
-            c.originalByString);
-        out.healing = new Recovery(provider.getName(),
-            derived != null ? "Recovered using " + provider.getName() + " via visual match, upgraded to a durable locator."
-                : "Recovered using " + provider.getName() + " via visual match.",
-            derived != null ? describeSuggestion(derived.suggestion())
-                : "visual match at (" + point.getX() + "," + point.getY() + ")",
-            replayResult);
-        out.resolvedSuggestion = derived != null ? derived.suggestion() : null;
-        out.initialSelector = derived != null ? derived.initialSelector() : null;
-        out.needsReview = derived != null ? derived.needsReview() : Boolean.TRUE;
-        out.reviewNote = derived != null ? derived.reviewNote()
-            : "Healed via a one-shot visual match this run; no durable selector could be derived for future runs.";
-        return out;
-      } catch (Throwable replayError) {
-        out.stage = "vision_replay_failed";
-        return out;
-      } finally {
-        Vision.cleanupVisionTag(ctx, resolved.id());
-      }
-    } finally {
-      ctx.exitFrame();
-    }
-  }
-
-  private static List<String> refCandidates(String snapshot, Vision.ResolvedVisionPoint p) {
-    return DurableLocator.buildNearestRefCandidates(
-        DurableLocator.parseAriaAiTree(snapshot), p.viewportX(), p.viewportY());
-  }
-
   // ---- console formatting ----------------------------------
 
   private static String formatConsoleLine(SelfHealingReport r) {
     String outcome = r.healed ? "HEALED" : "NOT healed";
     List<String> meta = new ArrayList<>();
     meta.add("provider=" + r.provider);
-    meta.add("vision=" + (r.usedVision ? "yes" : "no"));
     meta.add("actionRecovery=" + (r.usedActionRecovery ? "yes" : "no"));
     if (r.suggestedSelector != null) meta.add("suggested=\"" + r.suggestedSelector + "\"");
     if (r.failureStage != null) meta.add("stage=" + r.failureStage);

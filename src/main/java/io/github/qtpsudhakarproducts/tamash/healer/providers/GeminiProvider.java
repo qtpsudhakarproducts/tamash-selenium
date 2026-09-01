@@ -20,7 +20,6 @@ public final class GeminiProvider {
         "gemini:" + model,
         baseUrl + "/chat/completions",
         Map.of("authorization", "Bearer " + apiKey),
-        model,
-        "gemini");
+        model);
   }
 }

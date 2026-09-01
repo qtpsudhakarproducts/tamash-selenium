@@ -18,8 +18,7 @@ public final class OpenAiProvider {
         "openai:" + model,
         baseUrl + "/chat/completions",
         Map.of("authorization", "Bearer " + apiKey),
-        model,
-        "openai");
+        model);
   }
 
   /** Trims trailing slashes; falls back to {@code fallback} when unset/empty. */

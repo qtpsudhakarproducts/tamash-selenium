@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 
 /**
  * Port of src/healer/providers/prompt.ts — the shared system prompts, user-prompt builders, and
- * lenient JSON response parsers for all providers (text healing, vision, action recovery).
+ * lenient JSON response parsers for all providers (text healing, action recovery).
  * Adapted for Selenium: the snapshot is a JS-serialized DOM accessibility tree, and the fallback
  * strategies are native Selenium locators (css / xpath / id / name / link text).
  */
@@ -62,22 +62,6 @@ public final class Prompt {
       return;
     }
     sb.append(label).append(": ").append(v).append('\n');
-  }
-
-  public static final String VISION_SYSTEM_PROMPT = """
-      You are a Selenium self-healing assistant.
-      You will be given a screenshot of a web page, an action that just failed, and a human description of the element the test intended to interact with.
-      Find the single best-matching element that is LITERALLY visible in the screenshot and respond with strict JSON only (no markdown, no prose):
-      {"found":true,"x":<0-1000>,"y":<0-1000>}
-      Where x and y are the CENTER of the matching element, expressed as its position within the image scaled to a 0-1000 range (0 = left/top edge, 1000 = right/bottom edge) — NOT raw pixel coordinates.
-      If nothing in the screenshot plausibly matches the description, respond with {"found":false}. Never invent an element that isn't visible in the image.""";
-
-  public static String buildVisionUserPrompt(SuggestElementFromImageInput input) {
-    String description = input.getDescription();
-    String action = input.getAction() != null ? input.getAction() : "(unknown — element not found)";
-    return "Failed action: " + action + "\n\n"
-        + "Element description: " + (description == null || description.isEmpty() ? "(none provided)" : description) + "\n\n"
-        + "A screenshot of the page is attached.";
   }
 
   public static final String ACTION_RECOVERY_SYSTEM_PROMPT = """
@@ -201,19 +185,6 @@ public final class Prompt {
       sb.append("'").append(parts[i]).append("'");
     }
     return sb.append(")").toString();
-  }
-
-  public static VisionPoint parseVisionSuggestion(String content) {
-    JSONObject parsed = lenientParse(content);
-    if (parsed == null || !parsed.has("found")) return null;
-    if (!parsed.optBoolean("found", false)) {
-      return VisionPoint.notFound();
-    }
-    if (!parsed.has("x") || !parsed.has("y")) return null;
-    double x = parsed.optDouble("x", -1);
-    double y = parsed.optDouble("y", -1);
-    if (x < 0 || x > 1000 || y < 0 || y > 1000) return null;
-    return VisionPoint.at(x, y);
   }
 
   public static ActionTactic parseActionTacticSuggestion(String content) {

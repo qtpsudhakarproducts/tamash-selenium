@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
  * model call, no API key, no network. Resolves purely by text-matching the description against the
  * already-captured ARIA snapshot ({@link DurableLocator#findRuleBasedMatch}), reusing the exact
  * same never-guess discipline the AI-backed providers' prompt enforces. Narrower success envelope
- * than an AI provider (no vision, no action recovery — both always decline).
+ * than an AI provider (no action recovery — always declines).
  */
 public final class TamashRuleBasedProvider {
   private TamashRuleBasedProvider() {}
@@ -35,7 +35,6 @@ public final class TamashRuleBasedProvider {
   public static HealProvider create() {
     return new HealProvider() {
       @Override public String getName() { return "tamash"; }
-      @Override public boolean supportsVision() { return false; }
 
       @Override
       public ProviderResult suggestSelector(SuggestSelectorInput input) {
@@ -49,11 +48,6 @@ public final class TamashRuleBasedProvider {
             : DurableLocator.inferRoleFromAction(input.getAction());
         AiSuggestion suggestion = DurableLocator.findRuleBasedMatch(nodes, parsed.phrase(), expectedRole);
         return new ProviderResult(suggestion, null);
-      }
-
-      @Override
-      public VisionProviderResult suggestSelectorFromImage(SuggestElementFromImageInput input) {
-        return new VisionProviderResult(VisionPoint.notFound(), null);
       }
 
       @Override

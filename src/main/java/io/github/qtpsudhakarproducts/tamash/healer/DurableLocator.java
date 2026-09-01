@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
  * Port of src/healer/durable-locator.ts (cross-checked against the Python port's
  * durable_locator.py for non-JS decisions). The tree-reading half — {@link #parseAriaAiTree},
  * {@link #findAdjacentBranchPath}, {@link #findSiblingAnchorTexts}, {@link #extractScopedSnapshot},
- * {@link #findRuleBasedMatch}, {@link #buildNearestRefCandidates} — is DOM-agnostic and carried
+ * {@link #findRuleBasedMatch} — is DOM-agnostic and carried
  * over verbatim; it parses the YAML tree emitted by {@link DomSnapshot}.
  *
  * <p>The Playwright-specific half is replaced with Selenium equivalents: {@link #sameElement}
@@ -489,35 +489,6 @@ public final class DurableLocator {
     return AiSuggestion.none();
   }
 
-  // ---- nearest-ref candidates (vision handoff) — verbatim --------
-
-  private static double distanceToBoxCenter(Box box, double x, double y) {
-    return Math.hypot(box.x() + box.width() / 2 - x, box.y() + box.height() / 2 - y);
-  }
-
-  public static List<String> buildNearestRefCandidates(List<AriaAiNode> nodes, double x, double y,
-                                                       double radiusPx, int maxCandidates) {
-    record Cand(String ref, double distance) {}
-    List<Cand> cands = new ArrayList<>();
-    for (AriaAiNode n : nodes) {
-      if (n.ref() != null && n.box() != null) {
-        double d = distanceToBoxCenter(n.box(), x, y);
-        if (d <= radiusPx) {
-          cands.add(new Cand(n.ref(), d));
-        }
-      }
-    }
-    cands.sort((a, b) -> Double.compare(a.distance(), b.distance()));
-    List<String> out = new ArrayList<>();
-    for (int i = 0; i < Math.min(maxCandidates, cands.size()); i++) {
-      out.add(cands.get(i).ref());
-    }
-    return out;
-  }
-
-  public static List<String> buildNearestRefCandidates(List<AriaAiNode> nodes, double x, double y) {
-    return buildNearestRefCandidates(nodes, x, y, 150, 3);
-  }
 
   // ---- positional-selector detection ----------------------------
 

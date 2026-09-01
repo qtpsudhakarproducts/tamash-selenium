@@ -20,7 +20,7 @@ public final class TokenUsage {
     return (a == null ? 0 : a) + (b == null ? 0 : b);
   }
 
-  /** Combines usage from two attempts on the same failure (e.g. text + vision) — both are real
+  /** Combines usage from two attempts on the same failure (e.g. text + action-recovery) — both are real
    *  spend, so a failed heal that tried both still reports the full cost. Null-safe on either arg. */
   public static TokenUsage plus(TokenUsage a, TokenUsage b) {
     if (a == null) return b;

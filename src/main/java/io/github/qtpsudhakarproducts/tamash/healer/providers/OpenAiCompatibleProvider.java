@@ -7,8 +7,7 @@ import java.util.Map;
 
 /**
  * Shared {@link HealProvider} for any endpoint that speaks OpenAI's Chat Completions shape —
- * OpenAI itself and Gemini's OpenAI-compatible surface. Same request/response handling for all
- * three call types (text healing, vision, action recovery).
+ * OpenAI itself and Gemini's OpenAI-compatible surface.
  */
 public final class OpenAiCompatibleProvider {
   private OpenAiCompatibleProvider() {}
@@ -16,18 +15,15 @@ public final class OpenAiCompatibleProvider {
   private static final double DEFAULT_TIMEOUT_MS = 15000.0;
 
   public static HealProvider create(String name, String chatCompletionsUrl, Map<String, String> authHeaders,
-                                    String model, String vendorForVision) {
-    boolean supportsVision = VisionModels.isVisionCapableModel(vendorForVision, model);
-
+                                    String model) {
     return new HealProvider() {
       @Override public String getName() { return name; }
-      @Override public boolean supportsVision() { return supportsVision; }
 
       @Override
       public ProviderResult suggestSelector(SuggestSelectorInput input) {
         double t = timeout(input.getTimeoutMs());
         JSONObject body = baseBody()
-            .put("messages", messages(Prompt.SYSTEM_PROMPT, Prompt.buildUserPrompt(input), null));
+            .put("messages", messages(Prompt.SYSTEM_PROMPT, Prompt.buildUserPrompt(input)));
         JSONObject payload = Http.postJson(name, chatCompletionsUrl, authHeaders, body, t);
         if (payload == null) return null;
         String content = content(payload);
@@ -38,24 +34,10 @@ public final class OpenAiCompatibleProvider {
       }
 
       @Override
-      public VisionProviderResult suggestSelectorFromImage(SuggestElementFromImageInput input) {
-        double t = timeout(input.getTimeoutMs());
-        JSONObject body = baseBody()
-            .put("messages", messages(Prompt.VISION_SYSTEM_PROMPT, Prompt.buildVisionUserPrompt(input), input.getImageBase64()));
-        JSONObject payload = Http.postJson(name + " vision", chatCompletionsUrl, authHeaders, body, t);
-        if (payload == null) return null;
-        String content = content(payload);
-        if (content == null) return null;
-        VisionPoint point = Prompt.parseVisionSuggestion(content);
-        if (point == null) return null;
-        return new VisionProviderResult(point, Prompt.extractOpenAiCompatibleUsage(payload));
-      }
-
-      @Override
       public ActionTacticResult suggestActionTactic(SuggestActionTacticInput input) {
         double t = timeout(input.getTimeoutMs());
         JSONObject body = baseBody()
-            .put("messages", messages(Prompt.ACTION_RECOVERY_SYSTEM_PROMPT, Prompt.buildActionRecoveryUserPrompt(input), null));
+            .put("messages", messages(Prompt.ACTION_RECOVERY_SYSTEM_PROMPT, Prompt.buildActionRecoveryUserPrompt(input)));
         JSONObject payload = Http.postJson(name + " action-recovery", chatCompletionsUrl, authHeaders, body, t);
         if (payload == null) return null;
         String content = content(payload);
@@ -78,19 +60,10 @@ public final class OpenAiCompatibleProvider {
     };
   }
 
-  private static JSONArray messages(String system, String userText, String imageBase64) {
-    JSONObject userMsg = new JSONObject().put("role", "user");
-    if (imageBase64 == null) {
-      userMsg.put("content", userText);
-    } else {
-      userMsg.put("content", new JSONArray()
-          .put(new JSONObject().put("type", "text").put("text", userText))
-          .put(new JSONObject().put("type", "image_url").put("image_url",
-              new JSONObject().put("url", "data:image/png;base64," + imageBase64))));
-    }
+  private static JSONArray messages(String system, String userText) {
     return new JSONArray()
         .put(new JSONObject().put("role", "system").put("content", system))
-        .put(userMsg);
+        .put(new JSONObject().put("role", "user").put("content", userText));
   }
 
   private static String content(JSONObject payload) {

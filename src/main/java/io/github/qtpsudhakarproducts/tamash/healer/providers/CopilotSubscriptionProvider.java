@@ -4,7 +4,6 @@ import com.github.copilot.CopilotClient;
 import com.github.copilot.CopilotSession;
 import com.github.copilot.SystemMessageMode;
 import com.github.copilot.generated.AssistantMessageEvent;
-import com.github.copilot.rpc.BlobAttachment;
 import com.github.copilot.rpc.MessageOptions;
 import com.github.copilot.rpc.PermissionRequestResult;
 import com.github.copilot.rpc.SessionConfig;
@@ -38,33 +37,22 @@ public final class CopilotSubscriptionProvider {
   public static HealProvider create() {
     String model = Env.get("COPILOT_SUBSCRIPTION_MODEL"); // null => CLI default
     String name = "copilot-subscription:" + (model != null ? model : "default");
-    boolean supportsVision = model != null && looksVisionCapable(model);
 
     return new HealProvider() {
       @Override public String getName() { return name; }
-      @Override public boolean supportsVision() { return supportsVision; }
 
       @Override
       public ProviderResult suggestSelector(SuggestSelectorInput input) {
-        String out = send(Prompt.SYSTEM_PROMPT, Prompt.buildUserPrompt(input), null, timeout(input.getTimeoutMs()));
+        String out = send(Prompt.SYSTEM_PROMPT, Prompt.buildUserPrompt(input), timeout(input.getTimeoutMs()));
         if (out == null) return null;
         AiSuggestion s = Prompt.parseSuggestion(text(out));
         return s == null ? null : new ProviderResult(s, tokens(out));
       }
 
       @Override
-      public VisionProviderResult suggestSelectorFromImage(SuggestElementFromImageInput input) {
-        String out = send(Prompt.VISION_SYSTEM_PROMPT, Prompt.buildVisionUserPrompt(input),
-            input.getImageBase64(), timeout(input.getTimeoutMs()));
-        if (out == null) return null;
-        VisionPoint p = Prompt.parseVisionSuggestion(text(out));
-        return p == null ? null : new VisionProviderResult(p, tokens(out));
-      }
-
-      @Override
       public ActionTacticResult suggestActionTactic(SuggestActionTacticInput input) {
         String out = send(Prompt.ACTION_RECOVERY_SYSTEM_PROMPT, Prompt.buildActionRecoveryUserPrompt(input),
-            null, timeout(input.getTimeoutMs()));
+            timeout(input.getTimeoutMs()));
         if (out == null) return null;
         ActionTactic t = Prompt.parseActionTacticSuggestion(text(out));
         return t == null ? null : new ActionTacticResult(t, tokens(out));
@@ -76,7 +64,7 @@ public final class CopilotSubscriptionProvider {
 
       /** Returns "content\u0001outputTokens" or null. Kept as one string so the two parse paths
        *  above don't each need SDK types in their signatures. */
-      private String send(String systemPrompt, String userPrompt, String imageBase64, long timeoutMs) {
+      private String send(String systemPrompt, String userPrompt, long timeoutMs) {
         try {
           CopilotClient client = client();
           SessionConfig cfg = new SessionConfig()
@@ -93,10 +81,6 @@ public final class CopilotSubscriptionProvider {
           CopilotSession session = client.createSession(cfg).get(30, TimeUnit.SECONDS);
           try {
             MessageOptions opts = new MessageOptions().setPrompt(userPrompt);
-            if (imageBase64 != null) {
-              opts.setAttachments(List.of(
-                  new BlobAttachment().setData(imageBase64).setMimeType("image/png").setDisplayName("screenshot.png")));
-            }
             AssistantMessageEvent ev = session.sendAndWait(opts, timeoutMs).get(timeoutMs + 5000, TimeUnit.MILLISECONDS);
             if (ev == null || ev.getData() == null || ev.getData().content() == null) {
               return null;
@@ -154,13 +138,5 @@ public final class CopilotSubscriptionProvider {
       }
     }
     return (CopilotClient) c;
-  }
-
-  // Mirrors the TS provider's own vision heuristic.
-  private static boolean looksVisionCapable(String model) {
-    return VisionModels.isVisionCapableModel("openai", model)
-        || VisionModels.isVisionCapableModel("anthropic", model)
-        || VisionModels.isVisionCapableModel("gemini", model)
-        || model.toLowerCase().matches(".*(mai-code-1\\.1|vision).*");
   }
 }

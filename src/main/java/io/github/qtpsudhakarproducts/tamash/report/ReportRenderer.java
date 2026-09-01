@@ -210,9 +210,8 @@ final class ReportRenderer {
     String suggested = step.isNull("suggested_selector") ? null : step.optString("suggested_selector", null);
     if (healed && suggested != null) {
       String reviewFlag = step.optBoolean("needs_review", false) ? " &mdash; <strong>needs review</strong>" : "";
-      String visionFlag = step.optBoolean("used_vision", false) ? " (via vision)" : "";
       String provider = step.isNull("provider") ? "?" : step.optString("provider", "?");
-      note = "<div class=\"step-note healed-note\">healed via " + esc(provider) + visionFlag
+      note = "<div class=\"step-note healed-note\">healed via " + esc(provider)
           + " &mdash; recovered as " + esc(suggested) + formatTokens(usage) + reviewFlag + "</div>";
       String reviewNote = step.isNull("review_note") ? null : step.optString("review_note", null);
       if (step.optBoolean("needs_review", false) && reviewNote != null) {

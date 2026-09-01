@@ -23,7 +23,7 @@ import java.nio.charset.StandardCharsets;
  *
  * <p>Every emitted element is stamped {@code data-tamash-ref="eN"} so an AI-picked {@code [ref=eN]}
  * resolves to a real node via {@code By.cssSelector("[data-tamash-ref='eN']")} (the same tagging
- * trick {@link Vision} uses). {@link #clearRefs} removes them again after a heal (best-effort).
+ * trick vision-based tools use). {@link #clearRefs} removes them again after a heal (best-effort).
  */
 public final class DomSnapshot {
   private DomSnapshot() {}

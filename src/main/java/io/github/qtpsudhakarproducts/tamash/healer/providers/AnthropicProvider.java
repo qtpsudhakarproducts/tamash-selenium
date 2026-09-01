@@ -11,6 +11,6 @@ public final class AnthropicProvider {
     if (apiKey == null || apiKey.isEmpty() || model == null || model.isEmpty()) {
       return null;
     }
-    return AnthropicSdkProvider.create("anthropic:" + model, apiKey, null, model, "anthropic");
+    return AnthropicSdkProvider.create("anthropic:" + model, apiKey, null, model);
   }
 }

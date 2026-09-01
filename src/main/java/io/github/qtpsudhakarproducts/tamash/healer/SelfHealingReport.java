@@ -20,7 +20,6 @@ public final class SelfHealingReport {
   public String suggestedSelector;
   public TokenUsage tokenUsage;
   public String failureStage;
-  public boolean usedVision;
   public boolean usedActionRecovery;
   public String sourceLocation;
   public String testSelector;   // "com.foo.LoginTest#logsIn" — which test triggered this heal
@@ -47,7 +46,6 @@ public final class SelfHealingReport {
   public String getSuggestedSelector() { return suggestedSelector; }
   public TokenUsage getTokenUsage() { return tokenUsage; }
   public String getFailureStage() { return failureStage; }
-  public boolean isUsedVision() { return usedVision; }
   public boolean isUsedActionRecovery() { return usedActionRecovery; }
   public String getSourceLocation() { return sourceLocation; }
   public String getInitialSelector() { return initialSelector; }
@@ -74,7 +72,6 @@ public final class SelfHealingReport {
     }
     if (failureStage != null) o.put("failureStage", failureStage);
     if (healedInAssertion) o.put("healedInAssertion", true);
-    o.put("usedVision", usedVision);
     o.put("usedActionRecovery", usedActionRecovery);
     if (sourceLocation != null) o.put("sourceLocation", sourceLocation);
     if (initialSelector != null) o.put("initialSelector", initialSelector);

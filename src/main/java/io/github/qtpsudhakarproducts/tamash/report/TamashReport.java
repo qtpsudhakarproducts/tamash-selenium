@@ -55,8 +55,6 @@ public final class TamashReport {
     public String provider;
     public String failureStage;
     public TokenUsage tokenUsage;
-    public String screenshotBase64;
-    public boolean usedVision;
     public boolean usedActionRecovery;
     public Boolean needsReview;
     public String reviewNote;
@@ -82,8 +80,6 @@ public final class TamashReport {
         tu.put("total_tokens", tokenUsage.getTotalTokens());
         o.put("token_usage", tu);
       }
-      o.put("screenshot", screenshotBase64);
-      o.put("used_vision", usedVision);
       o.put("used_action_recovery", usedActionRecovery);
       o.put("needs_review", needsReview);
       o.put("review_note", reviewNote);

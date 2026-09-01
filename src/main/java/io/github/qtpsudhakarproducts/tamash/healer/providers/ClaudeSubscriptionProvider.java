@@ -23,7 +23,7 @@ public final class ClaudeSubscriptionProvider {
     if (token == null || token.isEmpty()) {
       return unavailable(name, model);
     }
-    return AnthropicSdkProvider.create(name, null, token, model, "anthropic");
+    return AnthropicSdkProvider.create(name, null, token, model);
   }
 
   private static String envOrDefault(String key, String fallback) {
@@ -34,14 +34,12 @@ public final class ClaudeSubscriptionProvider {
   private static HealProvider unavailable(String name, String model) {
     return new HealProvider() {
       @Override public String getName() { return name; }
-      @Override public boolean supportsVision() { return VisionModels.isVisionCapableModel("anthropic", model); }
       private <T> T warn() {
         System.out.println("[self-healer] claude-subscription: CLAUDE_CODE_OAUTH_TOKEN is not set — "
             + "run `claude setup-token`, or use HEALER_PROVIDER=anthropic + ANTHROPIC_API_KEY instead.");
         return null;
       }
       @Override public ProviderResult suggestSelector(SuggestSelectorInput i) { return warn(); }
-      @Override public VisionProviderResult suggestSelectorFromImage(SuggestElementFromImageInput i) { return warn(); }
       @Override public ActionTacticResult suggestActionTactic(SuggestActionTacticInput i) { return warn(); }
     };
   }

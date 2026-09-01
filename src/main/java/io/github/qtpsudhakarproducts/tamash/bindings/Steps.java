@@ -71,7 +71,6 @@ final class Steps {
     s.provider = report.getProvider();
     s.failureStage = report.getFailureStage();
     s.tokenUsage = report.getTokenUsage();
-    s.usedVision = report.isUsedVision();
     s.usedActionRecovery = report.isUsedActionRecovery();
     s.needsReview = report.getNeedsReview();
     s.reviewNote = report.getReviewNote();

@@ -109,15 +109,6 @@ public final class Doctor {
       return;
     }
 
-    if (provider.supportsVision()) {
-      System.out.println("  Vision-capable model: " + green("yes") + " — " + provider.getName()
-          + " may be used for the screenshot-based fallback when text-based healing fails.");
-      record("Vision Fallback", "OK", provider.getName() + " looks vision-capable by name");
-    } else {
-      System.out.println("  Vision-capable model: " + dim("no") + " — the screenshot-based fallback will never be attempted.");
-      record("Vision Fallback", "INFO", provider.getName() + " does not look vision-capable by name");
-    }
-
     System.out.println("  Testing connectivity to " + bold(provider.getName()) + "...");
     ProviderResult result = provider.suggestSelector(new SuggestSelectorInput(
         "click", "tamash-selenium doctor connectivity check", CONNECTIVITY_SNAPSHOT, CONNECTIVITY_TIMEOUT_MS));
