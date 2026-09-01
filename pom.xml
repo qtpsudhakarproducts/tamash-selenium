@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>io.github.qtpsudhakarproducts</groupId>
+  <groupId>com.vibetestq.qtpsudhakar</groupId>
   <artifactId>tamash-selenium</artifactId>
   <version>0.1.0-beta.2</version>
   <packaging>jar</packaging>
@@ -49,7 +49,7 @@
     <dotenv.version>3.2.0</dotenv.version>
 
     <!-- Default main class for `mvn exec:java` (the doctor / apply-heals CLIs). -->
-    <exec.mainClass>io.github.qtpsudhakarproducts.tamash.cli.Main</exec.mainClass>
+    <exec.mainClass>com.vibetestq.qtpsudhakar.tamash.cli.Main</exec.mainClass>
   </properties>
 
   <dependencies>
@@ -127,7 +127,7 @@
     </dependency>
 
     <!-- provided (not compile): the auto-registered TestExecutionListener in src/main
-         (io.github.qtpsudhakarproducts.tamash.report.TamashReportListener) needs the launcher API
+         (com.vibetestq.qtpsudhakar.tamash.report.TamashReportListener) needs the launcher API
          to compile against, but every test runner (Surefire, Gradle, an IDE) already puts a
          platform launcher on the classpath at test time, so this must not be forced on consumers
          as a transitive runtime dependency. -->
@@ -138,7 +138,7 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- provided: the TestNG integration (io.github.qtpsudhakarproducts.tamash.testng) compiles
+    <!-- provided: the TestNG integration (com.vibetestq.qtpsudhakar.tamash.testng) compiles
          against these; a TestNG consumer already has TestNG, a JUnit/Cucumber consumer never
          loads those classes. -->
     <dependency>
@@ -148,7 +148,7 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- provided: same, for the Cucumber integration (io.github.qtpsudhakarproducts.tamash.cucumber). -->
+    <!-- provided: same, for the Cucumber integration (com.vibetestq.qtpsudhakar.tamash.cucumber). -->
     <dependency>
       <groupId>io.cucumber</groupId>
       <artifactId>cucumber-java</artifactId>
@@ -172,7 +172,7 @@
       </resource>
       <!-- Ship the agent skill (SKILL.md + references + adapters) inside the JAR under skills/, so
            a consumer can extract it with:
-           mvn dependency:unpack -Dartifact=io.github.qtpsudhakarproducts:tamash-selenium:<v>
+           mvn dependency:unpack -Dartifact=com.vibetestq.qtpsudhakar:tamash-selenium:<v>
              -Dmdep.unpack.includes="skills/**" -DoutputDirectory=.claude -->
       <resource>
         <directory>${project.basedir}</directory>
@@ -272,7 +272,7 @@
 
       <!-- Publishes to Maven Central via the Sonatype Central Portal. Requires a <server> entry
            named "central" in ~/.m2/settings.xml with a token generated from central.sonatype.com,
-           and a verified io.github.qtpsudhakarproducts namespace on that account. -->
+           and a verified com.vibetestq.qtpsudhakar namespace on that account. -->
       <plugin>
         <groupId>org.sonatype.central</groupId>
         <artifactId>central-publishing-maven-plugin</artifactId>

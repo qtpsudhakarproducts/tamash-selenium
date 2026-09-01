@@ -29,7 +29,7 @@ For a shorter overview see [README.md](README.md). This file is the complete ref
 
 ```xml
 <dependency>
-  <groupId>io.github.qtpsudhakarproducts</groupId>
+  <groupId>com.vibetestq.qtpsudhakar</groupId>
   <artifactId>tamash-selenium</artifactId>
   <version>0.1.0-beta.2</version>
 </dependency>
@@ -146,7 +146,7 @@ your test normally.** Every element found through it is healing-aware.
 ### JUnit 5
 
 ```java
-import io.github.qtpsudhakarproducts.tamash.junit.UseTamashSelenium;
+import com.vibetestq.qtpsudhakar.tamash.junit.UseTamashSelenium;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -172,7 +172,7 @@ Swap `PageFactory.initElements` for `TamashPageFactory.initElements` in your Pag
 constructor — the only change:
 
 ```java
-import io.github.qtpsudhakarproducts.tamash.pagefactory.TamashPageFactory;
+import com.vibetestq.qtpsudhakar.tamash.pagefactory.TamashPageFactory;
 
 public class LoginPage {
   @FindBy(id = "username")               WebElement usernameTextbox;
@@ -211,19 +211,19 @@ and keep the `ServiceLoader`-registered listener.
 
 ### Cucumber
 
-Add `io.github.qtpsudhakarproducts.tamash.cucumber` to your `glue`.
+Add `com.vibetestq.qtpsudhakar.tamash.cucumber` to your `glue`.
 
 ```java
 @Suite
 @IncludeEngines("cucumber")
 @SelectClasspathResource("features")
 @ConfigurationParameter(key = GLUE_PROPERTY_NAME,
-    value = "com.acme.steps,io.github.qtpsudhakarproducts.tamash.cucumber")
+    value = "com.acme.steps,com.vibetestq.qtpsudhakar.tamash.cucumber")
 class RunCucumberTest {}
 ```
 
 ```java
-import static io.github.qtpsudhakarproducts.tamash.cucumber.TamashSeleniumScenario.driver;
+import static com.vibetestq.qtpsudhakar.tamash.cucumber.TamashSeleniumScenario.driver;
 
 public class LoginSteps {
   @When("I sign in as {string} / {string}")
@@ -297,7 +297,7 @@ it wraps (that still works through the proxy), and anything inside a `WebDriverW
 ## Getting a durable locator directly: `Bindings.getDurable`
 
 ```java
-import io.github.qtpsudhakarproducts.tamash.bindings.Bindings;
+import com.vibetestq.qtpsudhakar.tamash.bindings.Bindings;
 
 By durable = Bindings.getDurable(driver, By.xpath("//div[3]/form/input[2]"));   // or (driver, by, "sendKeys")
 driver.findElement(durable).sendKeys("value");

@@ -13,7 +13,7 @@ Search the project for where the `WebDriver` is created (`new ChromeDriver`, `ne
 - **Plain wrap** — the returned driver is passed through `SelfHealingDriver.wrap(...)` before any test or Page Object uses it:
 
   ```java
-  import io.github.qtpsudhakarproducts.tamash.SelfHealingDriver;
+  import com.vibetestq.qtpsudhakar.tamash.SelfHealingDriver;
 
   WebDriver driver = SelfHealingDriver.wrap(new ChromeDriver(options));
   ```
@@ -85,7 +85,7 @@ If the project uses **TestNG and not JUnit 5**, and `mvn test` suddenly reports 
 
 ```xml
 <dependency>
-  <groupId>io.github.qtpsudhakarproducts</groupId>
+  <groupId>com.vibetestq.qtpsudhakar</groupId>
   <artifactId>tamash-selenium</artifactId>
   <version>0.1.0-beta.2</version>
   <exclusions>

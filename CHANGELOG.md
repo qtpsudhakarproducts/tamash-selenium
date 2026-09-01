@@ -9,6 +9,11 @@ Compatibility, cost, and the `apply-heals` last mile.
 
 ### Changed
 
+- **New coordinates.** Group id `io.github.qtpsudhakarproducts` → **`com.vibetestq.qtpsudhakar`**,
+  base package `io.github.qtpsudhakarproducts.tamash` → **`com.vibetestq.qtpsudhakar.tamash`**.
+  Update your dependency and re-run your IDE's optimize-imports (`SelfHealingDriver`,
+  `@UseTamashSelenium`, `Tamash.hint`, `TamashPageFactory`, … all moved). `0.1.0-beta.1` at the old
+  coordinates stays on Central but is not continued.
 - **Runs on Java 21+** (was Java 25). No API past 21 is used.
 - **`junit-jupiter-api` is now `<optional>`** — a JUnit 5 project already declares it; a TestNG-only
   project no longer gets it transitively (which made Surefire auto-select the JUnit Platform
@@ -169,7 +174,7 @@ Parity with the Playwright Java package's self-healing engine, adapted to Seleni
   `references/heal.md` + Cursor / Copilot / `AGENTS.md` adapters), shipped inside the JAR under
   `skills/`. Drives the local onboard → run → review → apply → verify → land loop for Claude Code,
   Kiro, Cursor, Copilot, and any `AGENTS.md`-reading agent. Extract with
-  `mvn dependency:unpack -Dartifact=io.github.qtpsudhakarproducts:tamash-selenium:0.1.0-beta.2 -Dmdep.unpack.includes="skills/**" -DoutputDirectory=.claude`.
+  `mvn dependency:unpack -Dartifact=com.vibetestq.qtpsudhakar:tamash-selenium:0.1.0-beta.2 -Dmdep.unpack.includes="skills/**" -DoutputDirectory=.claude`.
 - **`apply-heals` CLI** — rewrites a `By.xxx("…")` literal or `@FindBy(...)` annotation on the
   recorded line to the confirmed selector, writes Markdown + JSON reports, and generates a
   `verify-heals.sh` / `.cmd`. *Beta limitation:* a locator kept in a separate `private final By`

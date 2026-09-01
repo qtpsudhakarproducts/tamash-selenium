@@ -27,7 +27,7 @@ failure.
 
 ```xml
 <dependency>
-  <groupId>io.github.qtpsudhakarproducts</groupId>
+  <groupId>com.vibetestq.qtpsudhakar</groupId>
   <artifactId>tamash-selenium</artifactId>
   <version>0.1.0-beta.2</version>
 </dependency>
@@ -41,7 +41,7 @@ Pulls in Selenium 4 transitively. Selenium 4.6+ provisions the browser drivers i
 Wherever you create the driver — your `BaseTest`, a `DriverFactory`, a `@BeforeMethod`:
 
 ```java
-import io.github.qtpsudhakarproducts.tamash.SelfHealingDriver;
+import com.vibetestq.qtpsudhakar.tamash.SelfHealingDriver;
 
 WebDriver driver = SelfHealingDriver.wrap(myDriver);   // RemoteWebDriver / Grid / cloud all fine
 ```
@@ -191,7 +191,7 @@ references, Cursor / Copilot / `AGENTS.md` adapters) that drives the local
 run → review → `apply-heals` → verify → land loop. Extract it into a project:
 
 ```sh
-mvn dependency:unpack -Dartifact=io.github.qtpsudhakarproducts:tamash-selenium:0.1.0-beta.2 \
+mvn dependency:unpack -Dartifact=com.vibetestq.qtpsudhakar:tamash-selenium:0.1.0-beta.2 \
   -Dmdep.unpack.includes="skills/**" -DoutputDirectory=.claude
 ```
 
