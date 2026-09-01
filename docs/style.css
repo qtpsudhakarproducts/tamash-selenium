@@ -1,0 +1,166 @@
+:root {
+  --bg: #ffffff;
+  --fg: #1b1f24;
+  --muted: #57606a;
+  --border: #d8dee4;
+  --code-bg: #f6f8fa;
+  --accent: #1a73e8;
+  --accent-2: #2fa84f;
+  --accent-3: #1fa774;
+  --link: #1a73e8;
+  --nav-bg: #0b1f3a;
+  --nav-fg: #ffffff;
+  --max-width: 880px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117;
+    --fg: #e6edf3;
+    --muted: #9198a1;
+    --border: #30363d;
+    --code-bg: #161b22;
+    --link: #6cb6ff;
+    --nav-bg: #05101f;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.65;
+}
+
+nav.top {
+  background: var(--nav-bg);
+  color: var(--nav-fg);
+  padding: 0.9rem 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+nav.top .brand {
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-right: auto;
+  white-space: nowrap;
+}
+
+nav.top .brand span { color: var(--accent-2); }
+
+nav.top a {
+  color: var(--nav-fg);
+  text-decoration: none;
+  font-size: 0.92rem;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+nav.top a:hover { opacity: 1; text-decoration: underline; }
+
+main {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 4rem;
+}
+
+h1, h2, h3, h4 {
+  line-height: 1.3;
+  scroll-margin-top: 4.5rem;
+}
+
+h1 { font-size: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+h2 { font-size: 1.4rem; margin-top: 2.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.35rem; }
+h3 { font-size: 1.1rem; margin-top: 1.75rem; }
+
+a { color: var(--link); }
+
+blockquote {
+  margin: 1rem 0;
+  padding: 0.1rem 1rem;
+  border-left: 3px solid var(--accent-3);
+  color: var(--muted);
+  background: var(--code-bg);
+  border-radius: 0 6px 6px 0;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: var(--code-bg);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+pre code { background: none; padding: 0; }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+  display: block;
+  overflow-x: auto;
+}
+
+th, td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+th { background: var(--code-bg); }
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2rem 0;
+}
+
+ul, ol { padding-left: 1.4rem; }
+
+footer {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.badge-row a {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.3rem 0.85rem;
+  font-size: 0.82rem;
+  text-decoration: none;
+  color: var(--fg);
+  background: var(--code-bg);
+}
+
+.badge-row a:hover { border-color: var(--accent); color: var(--accent); }

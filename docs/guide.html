@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guide — tamash-selenium</title>
+<meta name="description" content="Complete guide to tamash-selenium: self-healing for Selenium Java.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="top">
+  <a class="brand" href="index.html">tamash-<span>selenium</span></a>
+  <a href="guide.html">Full guide</a>
+  <a href="https://github.com/qtpsudhakarproducts/tamash-selenium">GitHub</a>
+  <a href="https://central.sonatype.com/artifact/com.vibetestq.qtpsudhakar/tamash-selenium">Maven Central</a>
+  <a href="https://github.com/qtpsudhakarproducts/tamash-selenium/issues/new/choose">Get support</a>
+</nav>
+<main>
+
+<h1>tamash-selenium</h1>
+<p><code>tamash-selenium</code> is a plug-and-play self-healing add-on for <strong>Selenium
+Java</strong>. All you need to do is wrap your <code>WebDriver</code> once — everything downstream
+(Page Objects, <code>@FindBy</code> fields, helper/util layers, inside a
+<code>WebDriverWait</code>) is healing-aware automatically.</p>
+<p>No code changes required beyond the wrap, if you're following standard Selenium best practices.</p>
+
+<h3>Why you need this</h3>
+<p>Websites change often. A button gets renamed or moved, and your test can't find it anymore —
+even though the app still works fine for real users. Normally, that just means a broken test.</p>
+<p><code>tamash-selenium</code> fixes this automatically. When <code>findElement</code> can't find
+an element, it locates it on the live page — with a free rule-based matcher or an AI model — and
+retries. If it succeeds, your test keeps going. If not, it fails normally, exactly as it would have
+without the package. Every attempt is logged, and a real fix can be turned into permanent source
+code with one command — see <a href="#making-a-heal-permanent-apply-heals">Making a heal
+permanent</a> below.</p>
+<p>Here are the detailed steps to use this package.</p>
+
+<h2 id="step-1-install">Step 1: Install it</h2>
+<pre><code class="language-xml">&lt;dependency&gt;
+  &lt;groupId&gt;com.vibetestq.qtpsudhakar&lt;/groupId&gt;
+  &lt;artifactId&gt;tamash-selenium&lt;/artifactId&gt;
+  &lt;version&gt;0.1.0-beta.4&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<p>Pulls in Selenium 4 transitively. Selenium 4.6+ provisions the browser drivers itself. Requires
+<strong>Java 21+</strong> at runtime.</p>
+<p><code>junit-jupiter-api</code> is an <strong>optional</strong> dependency (a JUnit 5 project
+already has it on its own classpath; a TestNG-only project must not pull it in transitively — it
+doesn't). <strong>TestNG</strong> and <strong>Cucumber</strong> are optional integrations too — this
+package declares <code>org.testng:testng</code> and <code>io.cucumber:cucumber-java</code> as
+<code>provided</code>, so add whichever your project already uses.</p>
+
+<h2 id="step-2-connect-an-ai-provider">Step 2: Connect an AI provider (optional)</h2>
+<p>With no configuration at all, healing uses the rule-based <strong><code>tamash</code></strong>
+provider — no key, no network, no tokens; it text-matches the element's decoded name against the
+page's DOM accessibility snapshot and never guesses. Good for well-named, Page-Object-style suites.</p>
+<p>For stronger healing (semantic reasoning over the page), pick one of Ollama, OpenAI, Anthropic
+(Claude), Google Gemini — or, if you don't have an API key issued to you, your own Claude or
+GitHub Copilot subscription instead.</p>
+<p>Create a file named <code>.env</code> in your project root (or set the same names as real env
+vars / <code>-D</code> system properties — all three are read, in this precedence:
+<strong>OS env var → <code>-D</code> system property → <code>.env</code></strong>):</p>
+<pre><code class="language-sh"># Master on/off switch. Leave this as true, or remove the line entirely.
+HEALER_ENABLED=true
+
+# Pick one: tamash | ollama | ollama-local | openai | anthropic | gemini
+#           | claude-subscription | copilot-subscription
+HEALER_PROVIDER=ollama
+
+# Optional, off by default — see "Action recovery" below.
+# HEALER_ACTION_RECOVERY_ENABLED=true
+
+# --- Ollama Cloud (https://ollama.com) ---
+OLLAMA_MODEL=gpt-oss:120b
+OLLAMA_API_KEY=
+
+# --- Self-hosted Ollama instead of Ollama Cloud ---
+# HEALER_PROVIDER=ollama-local
+# OLLAMA_LOCAL_MODEL=
+# OLLAMA_LOCAL_BASE_URL=http://localhost:11434
+# OLLAMA_LOCAL_API_KEY=            # optional — only if your deployment sits behind a gateway
+
+# --- OpenAI ---
+# OPENAI_MODEL=gpt-4o-mini
+# OPENAI_API_KEY=
+
+# --- Anthropic (Claude) ---
+# ANTHROPIC_MODEL=claude-haiku-4-5
+# ANTHROPIC_API_KEY=
+
+# --- Google Gemini — use a -flash-lite model; a full -flash model thinks by default and is slow ---
+# GEMINI_MODEL=gemini-flash-lite-latest
+# GEMINI_API_KEY=
+
+# --- Claude subscription (no API key — uses your Claude subscription) ---
+# HEALER_PROVIDER=claude-subscription
+# CLAUDE_SUBSCRIPTION_MODEL=claude-haiku-4-5
+# CLAUDE_CODE_OAUTH_TOKEN=
+
+# --- GitHub Copilot subscription (no API key — uses your Copilot subscription/free tier) ---
+# HEALER_PROVIDER=copilot-subscription
+# COPILOT_SUBSCRIPTION_MODEL=
+</code></pre>
+<p>Just fill in the API key and model for whichever one you want to use, and leave the rest as-is
+(or delete them).</p>
+
+<h3>Getting a free Ollama key (fastest way to get started)</h3>
+<p>Ollama Cloud is a quick, free way to get an API key without signing up for
+OpenAI/Anthropic/Gemini billing.</p>
+<ol>
+<li>Go to <a href="https://ollama.com/">ollama.com</a> and create an account.</li>
+<li>Once signed in, go to <a href="https://ollama.com/settings/keys">ollama.com/settings/keys</a>.</li>
+<li>Create a new API key and copy it.</li>
+<li>Paste it into your <code>.env</code> file:</li>
+</ol>
+<pre><code class="language-sh">HEALER_ENABLED=true
+HEALER_PROVIDER=ollama
+OLLAMA_MODEL=gpt-oss:120b
+OLLAMA_API_KEY=paste_your_key_here
+</code></pre>
+<p>That's all you need — no other variables required.</p>
+
+<h3>Using your Claude or GitHub Copilot subscription instead of an API key</h3>
+<p>If you don't have an API key issued to you but do have a personal Claude (Pro/Max/Team/Enterprise)
+or GitHub Copilot subscription (including the free tier), you can use that instead — no billing
+setup, no key to paste anywhere.</p>
+<p><strong>Claude subscription</strong> — works both locally and unattended in CI:</p>
+<pre><code class="language-sh">claude login                    # one-time, locally (needs the Claude Code CLI installed)
+</code></pre>
+<pre><code class="language-sh">HEALER_PROVIDER=claude-subscription
+CLAUDE_SUBSCRIPTION_MODEL=claude-haiku-4-5
+</code></pre>
+<p>For CI, generate a long-lived token once (<code>claude setup-token</code>) and set it as a secret
+instead of logging in interactively:</p>
+<pre><code class="language-sh">CLAUDE_CODE_OAUTH_TOKEN=the-token-you-copied
+</code></pre>
+<p><strong>GitHub Copilot subscription</strong> — needs the optional
+<code>com.github:copilot-sdk-java</code> dependency and the <code>copilot</code> CLI signed in
+locally once:</p>
+<pre><code class="language-sh">copilot                          # sign in once, locally
+</code></pre>
+<pre><code class="language-sh">HEALER_PROVIDER=copilot-subscription
+</code></pre>
+<p><strong>One thing worth knowing</strong>: only Claude and Copilot support this "subscription, no
+API key, works in CI too" combination. Both were verified end-to-end against a real self-healing run
+in this project's own CI.</p>
+
+<h3>No AI at all: <code>HEALER_PROVIDER=tamash</code></h3>
+<p>Resolves a broken locator by text-matching its decoded description against the page's DOM
+accessibility snapshot, plus the same <code>near</code> / <code>adjacent</code> structural widening
+the AI providers use. No key, no network, no tokens. The tradeoff: it never guesses — an ambiguous
+or weak match declines rather than picks, and there is no action-recovery fallback.</p>
+
+<h2 id="step-3-check-your-setup">Step 3: Check your setup</h2>
+<pre><code class="language-sh">mvn exec:java -Dexec.args="doctor"
+</code></pre>
+<p>Checks: AI provider connectivity (an actual call), the implicit-wait setting, brittle
+CSS/XPath locators bound to a non-descriptive variable name, locators declared inline in test files
+rather than a Page Object, and whether the coding-agent skill is installed and current. Color-coded
+output plus a summary table.</p>
+<p>If it finds issues, the fastest fix is to open the project in an AI coding assistant and ask it
+to address what's flagged, or follow the bundled <a href="#installing-the-coding-agent-skill">coding-agent
+skill</a>, which does exactly that in a structured way.</p>
+
+<h2 id="step-4-use-it-in-your-tests">Step 4: Use it in your tests</h2>
+<p>Whichever runner you use, the rule is the same: <strong>get the <code>WebDriver</code> from the
+integration (or wrap your own), write your test normally.</strong> Every element found through it is
+healing-aware.</p>
+
+<h3>Plain wrap — any runner, no integration required</h3>
+<pre><code class="language-java">import com.vibetestq.qtpsudhakar.tamash.SelfHealingDriver;
+
+WebDriver driver = SelfHealingDriver.wrap(new ChromeDriver());   // RemoteWebDriver / Grid / cloud all fine
+</code></pre>
+
+<h3>JUnit 5</h3>
+<pre><code class="language-java">import com.vibetestq.qtpsudhakar.tamash.junit.UseTamashSelenium;
+import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+
+@UseTamashSelenium
+class LoginTest {
+  @Test
+  void logsIn(WebDriver driver) {
+    driver.get("https://the-internet.herokuapp.com/login");
+    driver.findElement(By.id("username")).sendKeys("tomsmith");
+    driver.findElement(By.id("password")).sendKeys("SuperSecretPassword!");
+    driver.findElement(By.cssSelector("button[type='submit']")).click();
+  }
+}
+</code></pre>
+<p><code>WebDriver</code>, <code>JavascriptExecutor</code>, and <code>TakesScreenshot</code> are all
+injectable (same instance). Fresh driver per method by default;
+<code>TAMASH_REUSE_DRIVER=true</code> for one per class.</p>
+
+<h4>@FindBy / PageFactory</h4>
+<p>Swap <code>PageFactory.initElements</code> for <code>TamashPageFactory.initElements</code> in
+your Page Object constructor — the only change:</p>
+<pre><code class="language-java">import com.vibetestq.qtpsudhakar.tamash.pagefactory.TamashPageFactory;
+
+public class LoginPage {
+  @FindBy(id = "username")               WebElement usernameTextbox;
+  @FindBy(css = "button[type='submit']") WebElement loginButton;
+
+  public LoginPage(WebDriver driver) {
+    TamashPageFactory.initElements(driver, this);
+  }
+}
+</code></pre>
+<p><code>@FindBy</code> / <code>@FindBys</code> / <code>@FindAll</code> on <code>WebElement</code>
+fields heal; the healer's description is the field name, decoded
+(<code>usernameTextbox</code> → "Username (textbox)"). Resolution stays lazy, so
+<code>@CacheLookup</code> and <code>AjaxElementLocatorFactory</code> still work
+(<code>new TamashFieldDecorator(driver, new AjaxElementLocatorFactory(driver, 10))</code> +
+<code>PageFactory.initElements(decorator, page)</code> for a custom factory).
+<code>apply-heals</code> rewrites the <code>@FindBy(...)</code> annotation directly.
+<code>@FindBy List&lt;WebElement&gt;</code> fields use Selenium's default (unhealed).</p>
+
+<h3>TestNG</h3>
+<p>Extend <code>TamashSeleniumTestNgTest</code>, use <code>protected WebDriver driver</code>. The
+listener auto-registers via <code>ServiceLoader</code> — no <code>@Listeners</code>, no
+<code>testng.xml</code> entry.</p>
+<pre><code class="language-java">public class LoginTest extends TamashSeleniumTestNgTest {
+  @Test public void logsIn() {
+    driver.get("https://the-internet.herokuapp.com/login");
+    driver.findElement(By.id("username")).sendKeys("tomsmith");
+  }
+}
+</code></pre>
+<p>Add your existing TestNG dependency (shipped <code>provided</code>). If your suite already has a
+mandatory base class, copy the four <code>@Before/@AfterClass/Method</code> methods out of
+<code>TamashSeleniumTestNgTest</code> and keep the <code>ServiceLoader</code>-registered listener.</p>
+
+<h3>Cucumber</h3>
+<p>Add <code>com.vibetestq.qtpsudhakar.tamash.cucumber</code> to your <code>glue</code>.</p>
+<pre><code class="language-java">@Suite
+@IncludeEngines("cucumber")
+@SelectClasspathResource("features")
+@ConfigurationParameter(key = GLUE_PROPERTY_NAME,
+    value = "com.acme.steps,com.vibetestq.qtpsudhakar.tamash.cucumber")
+class RunCucumberTest {}
+</code></pre>
+<pre><code class="language-java">import static com.vibetestq.qtpsudhakar.tamash.cucumber.TamashSeleniumScenario.driver;
+
+public class LoginSteps {
+  @When("I sign in as {string} / {string}")
+  public void signIn(String user, String pass) {
+    driver().findElement(By.id("username")).sendKeys(user);
+    driver().findElement(By.id("password")).sendKeys(pass);
+    driver().findElement(By.cssSelector("button[type='submit']")).click();
+  }
+}
+</code></pre>
+<p>Hooks run at <code>order = 0</code>. Per-scenario heals are attached via
+<code>scenario.attach(...)</code>.</p>
+
+<h3>A quick tip for better results: descriptive names</h3>
+<p><code>By.id(...)</code> / <code>By.name(...)</code> carry their own meaning. A raw
+<code>By.cssSelector(...)</code> / <code>By.xpath(...)</code> doesn't — bind it to a descriptive
+field / variable and the healer decodes the name: <code>txtEmployeeId</code> → "Employee Id
+(textbox)", <code>submitButton</code> → "Submit (button)" (deterministic, no AI). Decoding works
+when the locator is on the same line as its <code>findElement</code> call, or is a
+<code>@FindBy</code> / Page Object field the call references by name. When nothing decodes, the
+healer falls back to the raw selector text — the AI providers also receive the raw undecoded name,
+the broken selector, and the enclosing class name, so even a terse <code>txtUsrNm</code> gives the
+model something to expand.</p>
+<p><strong>Through a <code>WebUtil</code> layer</strong>: when a locator is passed into a helper —
+<code>WebUtil.click(driver, loginButton)</code> — the name is resolved from the <em>caller's</em>
+line (<code>loginButton</code>), not from the util's <code>by</code> parameter, by walking up the
+stack. Give util-call arguments locator-ish names and this works automatically.</p>
+<p><strong>Explicit hint</strong> — <code>Tamash.hint(...)</code> — for keyword-driven suites, opaque
+names (<code>txtSSN</code>), or heavy indirection where no usable name reaches the call site:</p>
+<pre><code class="language-java">public static void click(By locator, String name) {
+  try (var h = Tamash.hint(name)) {          // ← the only addition
+    getElement(locator).click();
+  }
+}
+</code></pre>
+<p>The hint takes precedence over the automatic decode and is passed to the AI provider as the
+element's name. It does <strong>not</strong> change whether a heal is attempted.</p>
+
+<h2 id="what-gets-healed">What gets healed (and what doesn't)</h2>
+<p>Intercepted on <code>WebElement</code>: <code>click</code>, <code>sendKeys</code>,
+<code>clear</code>, <code>submit</code>, and the read methods (<code>getText</code>,
+<code>getAttribute</code>, <code>getDomAttribute</code>, <code>getDomProperty</code>,
+<code>getCssValue</code>, <code>isDisplayed</code>, <code>isEnabled</code>, <code>isSelected</code>,
+<code>getTagName</code>, <code>getAccessibleName</code>, <code>getAriaRole</code>,
+<code>getRect</code>). Plus <code>findElement</code> on the driver and on elements —
+<strong><code>findElements</code> (plural) is never healed</strong>, by design: it returns an empty
+list for a broken locator rather than throwing, and healing it would risk silently resolving to the
+wrong element for a presence check.</p>
+<table>
+<thead><tr><th>Situation</th><th>Healed?</th></tr></thead>
+<tbody>
+<tr><td><code>driver.findElement(brokenBy)</code> / <code>element.findElement(brokenBy)</code></td><td>✅ at find time</td></tr>
+<tr><td><code>@FindBy</code> field, plain <code>PageFactory.initElements(wrappedDriver, page)</code></td><td>✅ (resolves through the wrapped driver)</td></tr>
+<tr><td>Broken locator inside <code>wait.until(...)</code> — <code>ExpectedConditions</code>, custom conditions</td><td>✅ (first few polls deferred as "still loading", then it heals; the heal cache keeps the rest of the polls free)</td></tr>
+<tr><td>A <code>WebUtil</code> / keyword layer wrapping any of the above</td><td>✅</td></tr>
+<tr><td><code>StaleElementReferenceException</code> acting on an element whose page changed</td><td>✅ (re-find with the original locator first, then heal)</td></tr>
+<tr><td><code>ElementNotInteractableException</code> / <code>ElementClickInterceptedException</code></td><td>⚙️ action recovery (opt-in, see below) — <strong>off</strong> by default: surfaces as the real exception</td></tr>
+<tr><td>The <code>Actions</code> (advanced interactions) API, <code>Select</code> internals beyond the <code>WebElement</code> it wraps, anything inside a <code>WebDriverWait</code>'s own polling internals</td><td>Not intercepted directly (a <code>Select</code> built on a healed element still works — the element itself heals)</td></tr>
+</tbody>
+</table>
+<p><code>SelfHealingDriver.wrap(...)</code> pins Selenium's <strong>implicit wait to 0</strong>
+(<code>TAMASH_KEEP_IMPLICIT_WAIT=true</code> to keep yours). Use explicit
+<code>WebDriverWait</code> for synchronisation as normal. <code>TAMASH_ACTION_TIMEOUT_MS</code>
+(default 10000) bounds the healer's own snapshot / JS calls, not your test's waits.</p>
+
+<h3>Assertions</h3>
+<p>A broken locator inside <code>assertEquals(..., driver.findElement(x).getText())</code> heals —
+the assertion is checking page content, not whether that selector string is current. Healed
+assertion finds log as <code>[self-healer][assertion] …</code>.</p>
+<table>
+<thead><tr><th><code>HEALER_ASSERTIONS</code></th><th>Behaviour</th></tr></thead>
+<tbody>
+<tr><td>unset / <code>heal</code></td><td>heal normally</td></tr>
+<tr><td><code>warn</code></td><td>heal, flag the test, print a summary of affected tests at JVM shutdown</td></tr>
+<tr><td><code>strict</code></td><td>a broken locator inside an assertion fails natively — no heal</td></tr>
+</tbody>
+</table>
+<p><strong>Assert-absent is never healed</strong> (any mode):
+<code>assertThrows(NoSuchElementException.class, …)</code>,
+<code>ExpectedConditions.invisibilityOfElementLocated</code> / <code>stalenessOf</code> /
+<code>numberOfElementsToBeLessThan</code>, and helper method names containing <code>absent</code> /
+<code>notPresent</code> / <code>gone</code>. Use <code>driver.findElements(by).isEmpty()</code>
+(never healed) for absence checks.</p>
+
+<h2 id="getting-a-durable-locator-directly">Getting a durable locator directly: <code>Bindings.getDurable</code></h2>
+<pre><code class="language-java">import com.vibetestq.qtpsudhakar.tamash.bindings.Bindings;
+
+By durable = Bindings.getDurable(driver, By.xpath("//div[3]/form/input[2]"));   // or (driver, by, "sendKeys")
+driver.findElement(durable).sendKeys("value");
+</code></pre>
+<p>Resolves the given <code>By</code> to an element and derives the most durable <code>By</code> for
+it — the same derivation the healer uses internally. Throws if nothing durable could be derived.</p>
+
+<h2 id="not-paying-for-the-same-heal-twice">Not paying for the same heal twice</h2>
+<p>A successful heal is remembered in <code>.tamash-selenium/heals.jsonl</code>. Next time that
+exact locator breaks the same way, the confirmed selector is tried <strong>first</strong> — no
+snapshot, no AI call. The cache persists on disk locally across runs; in CI it only helps within a
+single run (a fresh checkout has no cache). Landing the real fix with <code>apply-heals</code> is
+what eliminates repeat AI calls in CI.</p>
+<p>Each line records the broken <code>initialSelector</code>, the structured <code>suggestion</code>
+(the source of truth <code>apply-heals</code> re-derives from), and — for quick human review — the
+rendered <code>newLocator</code> (<code>By.name("firstName")</code>) and <code>newFindBy</code>
+(<code>@FindBy(name = "firstName")</code>) forms. A one-shot heal that could not be reduced to a
+durable selector has no <code>suggestion</code>/<code>newLocator</code> and carries
+<code>needsReview: true</code> with a <code>reviewNote</code>.</p>
+
+<h2 id="making-a-heal-permanent-apply-heals">Making a heal permanent: <code>apply-heals</code></h2>
+<pre><code class="language-sh">mvn test                                            # heals at runtime, records what it healed
+mvn exec:java -Dexec.args="apply-heals --dry-run"   # preview the By.… rewrite
+mvn exec:java -Dexec.args="apply-heals"             # apply it (prompts first, at a real terminal)
+</code></pre>
+<p>Rewrites a <code>By.xxx("…")</code> literal, a <code>@FindBy(...)</code> annotation, or a
+<code>private final By field = By.x("…")</code> declaration line. Each run writes
+<code>apply-heals-report.json</code> / <code>.md</code> under <code>.tamash-selenium/</code>
+(timestamped copies under <code>history/</code>) and a <code>verify-heals</code> script
+(<code>.sh</code> / <code>.cmd</code>) that re-runs exactly the affected tests with
+<code>HEALER_ENABLED=false</code> — a pass proves the rewritten selector stands alone.</p>
+<p>Flags: <code>--dry-run</code>, <code>--logs-dir &lt;path&gt;</code> (merge sharded
+<code>heals.jsonl</code> files from a sharded CI run), <code>--yes</code> / <code>-y</code> (skip the
+confirmation prompt — always skipped automatically in CI / non-interactive runs).</p>
+
+<h2 id="html-step-report">HTML step report</h2>
+<pre><code class="language-sh">mvn test -DTAMASH_REPORT=target/tamash-report.html
+</code></pre>
+<p>Per-test step timeline (action, duration, entered value), which steps healed (recovered selector,
+provider, token cost), the DOM snapshot on an unrecovered failure, summary charts. Works for all
+three runners; zero overhead when <code>TAMASH_REPORT</code> is unset.</p>
+
+<h2 id="action-recovery">Action recovery (optional)</h2>
+<p>A second-order fallback for when the element <em>was</em> found but the action itself failed —
+<code>ElementClickInterceptedException</code> (something covers the element) or
+<code>ElementNotInteractableException</code>. Off by default; the real exception surfaces
+unchanged. Enable it to have an AI provider pick a recovery tactic — scroll into view, a direct
+JS click/dispatch bypassing Selenium's own interactability checks, or a short wait-then-retry:</p>
+<pre><code class="language-sh">HEALER_ACTION_RECOVERY_ENABLED=true
+</code></pre>
+<p>Needs a real AI provider — the rule-based <code>tamash</code> provider always declines a tactic
+(it has nothing to reason from). Verified in this project's own CI to reliably recover a click
+covered by an overlay, across OpenAI, Anthropic, and Gemini.</p>
+<p><strong>Stale elements are handled separately, always on, no flag needed</strong>: a
+<code>StaleElementReferenceException</code> first gets a cheap re-find with the original locator,
+then a full selector heal if that still fails.</p>
+
+<h2 id="installing-the-coding-agent-skill">Installing the coding-agent skill</h2>
+<p>The package ships an orchestration skill for AI coding assistants (Claude Code, Cursor, GitHub
+Copilot, and other tools that read <code>.agents/skills/</code>) that drives the local
+run → review → <code>apply-heals</code> → verify → land loop for you. Install it into your project:</p>
+<pre><code class="language-sh">mvn exec:java -Dexec.args="init-skill"
+</code></pre>
+<p>Copies <code>SKILL.md</code> + reference docs into both <code>.claude/skills/tamash-selenium/</code>
+(Claude Code) and <code>.agents/skills/tamash-selenium/</code> (the cross-tool standard). Same
+content in both; no per-agent format conversion.</p>
+<table>
+<thead><tr><th>Flag</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><code>--target claude|agents</code></td><td>install just one location</td></tr>
+<tr><td><code>--user</code></td><td>install under your home directory — covers every project on the machine</td></tr>
+<tr><td><code>--force</code></td><td>overwrite a hand-edited copy</td></tr>
+<tr><td><code>--dry-run</code></td><td>show what would happen, change nothing</td></tr>
+</tbody>
+</table>
+<p>A version marker is written so <code>doctor</code> can flag when the installed skill has fallen
+behind the package — re-run <code>init-skill</code> to refresh.</p>
+
+<h2 id="environment-variables">Environment variables</h2>
+<table>
+<thead><tr><th>Variable</th><th>Default</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>HEALER_ENABLED</code></td><td><code>true</code></td><td>Master switch. Any value other than <code>false</code> / <code>0</code> leaves healing on.</td></tr>
+<tr><td><code>HEALER_PROVIDER</code></td><td><code>tamash</code></td><td><code>ollama</code> | <code>ollama-local</code> | <code>openai</code> | <code>anthropic</code> | <code>gemini</code> | <code>claude-subscription</code> | <code>copilot-subscription</code> | <code>tamash</code>.</td></tr>
+<tr><td><code>HEALER_ASSERTIONS</code></td><td><code>heal</code></td><td><code>heal</code> | <code>warn</code> | <code>strict</code>. Assert-absent is never healed.</td></tr>
+<tr><td><code>TAMASH_KEEP_IMPLICIT_WAIT</code></td><td><code>false</code></td><td><code>true</code> keeps your implicit wait (wrapping pins it to 0 otherwise).</td></tr>
+<tr><td><code>OLLAMA_MODEL</code> / <code>OLLAMA_API_KEY</code> / <code>OLLAMA_BASE_URL</code></td><td>— / — / <code>https://ollama.com</code></td><td>Ollama Cloud.</td></tr>
+<tr><td><code>OLLAMA_LOCAL_MODEL</code> / <code>OLLAMA_LOCAL_BASE_URL</code> / <code>OLLAMA_LOCAL_API_KEY</code></td><td>— / <code>http://localhost:11434</code> / —</td><td>Self-hosted Ollama. Key optional.</td></tr>
+<tr><td><code>OPENAI_MODEL</code> / <code>OPENAI_API_KEY</code></td><td>—</td><td>OpenAI. No default model — must be set.</td></tr>
+<tr><td><code>ANTHROPIC_MODEL</code> / <code>ANTHROPIC_API_KEY</code></td><td>—</td><td>Anthropic (Claude). No default model — must be set.</td></tr>
+<tr><td><code>GEMINI_MODEL</code> / <code>GEMINI_API_KEY</code></td><td>—</td><td>Google Gemini. Use a <code>-flash-lite</code> model.</td></tr>
+<tr><td><code>GEMINI_THINKING</code></td><td><code>off</code></td><td><code>on</code> restores Gemini's default thinking budget (off sends <code>reasoning_effort: low</code>).</td></tr>
+<tr><td><code>CLAUDE_CODE_OAUTH_TOKEN</code> / <code>CLAUDE_SUBSCRIPTION_MODEL</code></td><td>— / <code>claude-haiku-4-5</code></td><td><code>claude-subscription</code>.</td></tr>
+<tr><td><code>COPILOT_SUBSCRIPTION_MODEL</code></td><td>—</td><td><code>copilot-subscription</code>.</td></tr>
+<tr><td><code>HEALER_ACTION_RECOVERY_ENABLED</code></td><td><code>false</code></td><td>Opt-in AI action recovery (scroll / force / wait / dispatch).</td></tr>
+<tr><td><code>TAMASH_BROWSER</code></td><td><code>chrome</code></td><td><code>chrome</code> | <code>firefox</code> | <code>edge</code> | <code>safari</code>.</td></tr>
+<tr><td><code>TAMASH_REUSE_DRIVER</code></td><td><code>false</code></td><td>Reuse one driver per test class instead of one per method.</td></tr>
+<tr><td><code>HEADLESS</code></td><td><code>true</code></td><td><code>false</code> runs the browser headed.</td></tr>
+<tr><td><code>TAMASH_ACTION_TIMEOUT_MS</code></td><td><code>10000</code></td><td>Bounds the healer's own snapshot / JS calls.</td></tr>
+<tr><td><code>TAMASH_REPORT</code></td><td>unset</td><td>Output path for the HTML step report.</td></tr>
+<tr><td><code>TAMASH_SOURCE_ROOTS</code></td><td>unset</td><td>Extra source roots to search for Page Object description recovery, for multi-module builds.</td></tr>
+<tr><td><code>TAMASH_DEBUG</code></td><td>unset</td><td>Print DOM-snapshot capture diagnostics to stderr.</td></tr>
+</tbody>
+</table>
+
+<h2 id="cli-commands">CLI commands</h2>
+<table>
+<thead><tr><th>Command</th><th>Flags</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><code>mvn exec:java -Dexec.args="doctor"</code></td><td><code>--dir &lt;path&gt;</code></td><td>Pre-flight checks: connectivity, implicit wait, locator naming, inline locators, agent-skill install state.</td></tr>
+<tr><td><code>mvn exec:java -Dexec.args="apply-heals"</code></td><td><code>--dry-run</code>, <code>--logs-dir &lt;path&gt;</code>, <code>--yes</code></td><td>Rewrite healed locators into source, write reports + a verify script.</td></tr>
+<tr><td><code>mvn exec:java -Dexec.args="init-skill"</code></td><td><code>--target claude|agents</code>, <code>--user</code>, <code>--force</code>, <code>--dry-run</code>, <code>--dir &lt;path&gt;</code></td><td>Copy the coding-agent skill into <code>.claude/skills/</code> and <code>.agents/skills/</code>.</td></tr>
+</tbody>
+</table>
+
+<h2 id="license">License</h2>
+<p><a href="https://github.com/qtpsudhakarproducts/tamash-selenium/blob/main/LICENSE">Apache License,
+Version 2.0</a> — free to use, modify, and redistribute, including commercially, as long as you keep
+the copyright and license notices.</p>
+
+<h2 id="support">Support</h2>
+<p>Bugs, feature requests, and questions: open an issue on
+<a href="https://github.com/qtpsudhakarproducts/tamash-selenium/issues/new/choose">this repository</a>.
+See the <a href="index.html#getting-support-reporting-bugs-requesting-features">Getting support</a>
+section on the home page for the template guide and issue-label filters.</p>
+
+</main>
+<footer>
+  Published from <code>tamash-selenium</code> via GitHub Actions.
+</footer>
+</body>
+</html>

@@ -1,0 +1,35 @@
+name: Issue labels
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  issues: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.issue.body || "";
+            const section = (title) => {
+              const re = new RegExp(`###\\s*${title}\\s*\\n+([\\s\\S]*?)(\\n###|$)`, "i");
+              const m = body.match(re);
+              return m ? m[1].trim().toLowerCase() : "";
+            };
+            const fw = section("Framework") || section("Framework this is about \\(if specific\\)");
+            const labels = new Set();
+            if (fw.includes("junit")) labels.add("framework: junit5");
+            else if (fw.includes("testng")) labels.add("framework: testng");
+            else if (fw.includes("cucumber")) labels.add("framework: cucumber");
+            else if (fw.includes("plain") || fw.includes("wrap")) labels.add("framework: plain-wrap");
+            if (labels.size === 0) return;
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              labels: [...labels],
+            });

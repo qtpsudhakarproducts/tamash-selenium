@@ -1,0 +1,77 @@
+name: 🐛 Bug report
+description: Something isn't working as documented — healing fails unexpectedly, a wrong selector is suggested, a crash, or an install/config problem.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a report. Please fill in as much as you can — the
+        framework, provider, and a console log make almost every bug diagnosable on the first pass.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you expected, and what actually happened instead.
+      placeholder: A broken `By.id("user-name")` should have healed to `By.id("username")`, but the test failed with…
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: A minimal test (ideally against a `data:text/html,…` page or a public site) that shows the problem.
+      render: java
+    validations:
+      required: true
+  - type: dropdown
+    id: framework
+    attributes:
+      label: Framework
+      options:
+        - JUnit 5 (@UseTamashSelenium)
+        - TestNG (TamashSeleniumTestNgTest)
+        - Cucumber
+        - Plain SelfHealingDriver.wrap (no integration)
+        - Other / not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Healing provider
+      options:
+        - tamash (rule-based, no AI)
+        - ollama
+        - ollama-local
+        - openai
+        - anthropic
+        - gemini
+        - claude-subscription
+        - copilot-subscription
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: tamash-selenium version
+      placeholder: "0.1.0-beta.4"
+    validations:
+      required: true
+  - type: input
+    id: java-selenium
+    attributes:
+      label: Java + Selenium versions
+      placeholder: "Java 21, Selenium 4.27.0"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console output
+      description: The `[self-healer] …` lines and the surrounding stack trace. Set `TAMASH_DEBUG=1` for snapshot-capture diagnostics.
+      render: shell
+  - type: textarea
+    id: heals-jsonl
+    attributes:
+      label: Relevant `.tamash-selenium/heals.jsonl` entry (if any)
+      render: json

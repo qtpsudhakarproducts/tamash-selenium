@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Documentation
+    url: https://qtpsudhakarproducts.github.io/tamash-selenium/
+    about: The full guide — install, providers, every code pattern, apply-heals, the report.
+  - name: 💬 Search existing issues
+    url: https://github.com/qtpsudhakarproducts/tamash-selenium/issues?q=is%3Aissue
+    about: Please check whether your question or bug is already reported before opening a new one.

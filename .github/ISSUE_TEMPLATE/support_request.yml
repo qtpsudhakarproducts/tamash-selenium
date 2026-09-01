@@ -1,0 +1,54 @@
+name: 🙋 Support request
+description: Configuration help, "how do I...", or anything you are stuck on.
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check the [full guide](https://qtpsudhakarproducts.github.io/tamash-selenium/guide.html)
+        first — install, providers, every code pattern, and the CLIs are all covered there.
+  - type: textarea
+    id: question
+    attributes:
+      label: What do you need help with
+    validations:
+      required: true
+  - type: dropdown
+    id: framework
+    attributes:
+      label: Framework
+      options:
+        - JUnit 5
+        - TestNG
+        - Cucumber
+        - Plain SelfHealingDriver.wrap
+        - Deciding which to use
+    validations:
+      required: true
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Healing provider
+      options:
+        - tamash (rule-based, no AI)
+        - ollama
+        - ollama-local
+        - openai
+        - anthropic
+        - gemini
+        - claude-subscription
+        - copilot-subscription
+        - Not decided yet
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: tamash-selenium version
+      placeholder: "0.1.0-beta.4"
+  - type: textarea
+    id: tried
+    attributes:
+      label: What you've tried / relevant config
+      description: Your `.env` (redact keys), the `doctor` output, or the relevant test code.
+      render: shell

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tamash-selenium — Self-healing for Selenium Java</title>
+<meta name="description" content="Plug-and-play self-healing for Selenium Java: recovers broken locators at runtime via a rule-based matcher or an AI model.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="top">
+  <a class="brand" href="index.html">tamash-<span>selenium</span></a>
+  <a href="guide.html">Full guide</a>
+  <a href="https://github.com/qtpsudhakarproducts/tamash-selenium">GitHub</a>
+  <a href="https://central.sonatype.com/artifact/com.vibetestq.qtpsudhakar/tamash-selenium">Maven Central</a>
+  <a href="https://github.com/qtpsudhakarproducts/tamash-selenium/issues/new/choose">Get support</a>
+</nav>
+<main>
+<h1>tamash-selenium — Documentation &amp; Support</h1>
+
+<div class="badge-row">
+  <a href="https://central.sonatype.com/artifact/com.vibetestq.qtpsudhakar/tamash-selenium">Maven Central</a>
+  <a href="https://github.com/qtpsudhakarproducts/tamash-selenium/blob/main/LICENSE">Apache-2.0 License</a>
+  <a href="https://github.com/qtpsudhakarproducts/tamash-selenium/actions/workflows/ci.yml">CI</a>
+  <a href="https://github.com/qtpsudhakarproducts/tamash-selenium-java-sample">Sample repo</a>
+</div>
+
+<p>Plug-and-play <strong>self-healing for Selenium Java</strong> — <strong>JUnit 5</strong>,
+<strong>TestNG</strong>, and <strong>Cucumber</strong>, with Page Object Model and PageFactory
+support out of the box.</p>
+
+<p>Websites change often — a button gets renamed or moved, and <code>findElement</code> can't find
+it anymore, even though the app still works fine for real users. <code>tamash-selenium</code> fixes
+this automatically: when <code>findElement</code> can't find an element, it locates it on the live
+page — with a free rule-based matcher or an AI model — and retries. If it succeeds, your test keeps
+going. If not, it fails exactly as it would have without the package; healing never masks a real
+failure. Every attempt — healed or not — is fully logged: provider used, selector suggested, token
+cost.</p>
+
+<p>No new framework to learn. The whole integration is one line:</p>
+
+<pre><code class="language-java">WebDriver driver = SelfHealingDriver.wrap(new ChromeDriver());
+</code></pre>
+
+<p>This repository is both the <strong>library source</strong> and the
+<strong>home for documentation and support</strong> — how to install and use it, and where to raise
+bugs, feature requests, or support questions. A separate, runnable example lives in the
+<a href="https://github.com/qtpsudhakarproducts/tamash-selenium-java-sample">sample repo</a> linked
+below.</p>
+
+<blockquote>
+<p>Part of the same idea across ecosystems — <a href="https://qtpsudhakarproducts.github.io/tamash-playwright-support/">tamash-playwright</a>
+brings the equivalent self-healing to Playwright (TypeScript, Python, Java). Same approach, separate
+package per framework.</p>
+</blockquote>
+
+<p>Free to use, modify, and redistribute (including commercially) under the Apache License 2.0 — see
+<a href="#license">License</a>. Pick your provider — <strong>the rule-based <code>tamash</code>
+provider</strong> (free, no AI, no network), <strong>Ollama</strong>, <strong>OpenAI</strong>,
+<strong>Anthropic</strong>, <strong>Gemini</strong>, or your own <strong>Claude or GitHub Copilot
+subscription</strong>, no separate API key needed — and give it a try.</p>
+
+<hr>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#how-it-works">How it works</a></li>
+<li><a href="#package">Package</a></li>
+<li><a href="#full-documentation">Full documentation</a></li>
+<li><a href="#quick-start">Quick start</a></li>
+<li><a href="#supported-ai-providers">Supported AI providers</a></li>
+<li><a href="#sample-implementation">Sample implementation</a></li>
+<li><a href="#getting-support-reporting-bugs-requesting-features">Getting support, reporting bugs, requesting features</a></li>
+<li><a href="#filtering-issues-by-framework">Filtering issues by framework</a></li>
+<li><a href="#license">License</a></li>
+</ul>
+
+<hr>
+
+<h2 id="how-it-works">How it works</h2>
+<ol>
+<li>Your test runs as normal using Selenium.</li>
+<li><code>findElement</code> fails to find its element (page changed, selector went stale, etc.).</li>
+<li><code>tamash-selenium</code> captures a JS-derived DOM accessibility snapshot of the current page.</li>
+<li>It text-matches that snapshot against the element's decoded description (the free
+<code>tamash</code> provider), or sends it to your configured AI provider and asks it to find the
+described element.</li>
+<li>If a match is found, a durable <code>By</code> is derived and verified against the live element,
+the call is retried, and the test continues.</li>
+<li>If it can't be healed, the test fails normally — same as stock Selenium.</li>
+<li>Every attempt (healed or not) is logged: provider, model, suggested selector, and token cost,
+plus an optional HTML report of the run.</li>
+</ol>
+
+<h2 id="package">Package</h2>
+<table>
+<thead><tr><th>Language</th><th>Package</th><th>Registry</th></tr></thead>
+<tbody>
+<tr>
+<td>Java</td>
+<td><code>com.vibetestq.qtpsudhakar:tamash-selenium</code></td>
+<td><a href="https://central.sonatype.com/artifact/com.vibetestq.qtpsudhakar/tamash-selenium">Maven Central</a></td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="full-documentation">Full documentation</h2>
+<p>The complete guide — install steps, <code>.env</code> setup, every code pattern (Page Object
+Model, PageFactory, keyword-driven, JUnit 5 / TestNG / Cucumber), what gets healed vs. not, the
+<code>doctor</code> / <code>apply-heals</code> / <code>init-skill</code> CLIs, and how to read the
+report — is published on this site:</p>
+<ul>
+<li><strong><a href="guide.html">Full guide →</a></strong></li>
+</ul>
+<p>The quick start below is the short version — start here if you just want a working example.</p>
+
+<h2 id="quick-start">Quick start</h2>
+<p>Works with JUnit 5, TestNG, or Cucumber.</p>
+
+<pre><code class="language-xml">&lt;dependency&gt;
+  &lt;groupId&gt;com.vibetestq.qtpsudhakar&lt;/groupId&gt;
+  &lt;artifactId&gt;tamash-selenium&lt;/artifactId&gt;
+  &lt;version&gt;0.1.0-beta.4&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+
+<p>Wherever you create the driver:</p>
+
+<pre><code class="language-java">import com.vibetestq.qtpsudhakar.tamash.SelfHealingDriver;
+
+WebDriver driver = SelfHealingDriver.wrap(myDriver);   // RemoteWebDriver / Grid / cloud all fine
+</code></pre>
+
+<p>With no configuration, healing uses the free rule-based <code>tamash</code> provider — no key, no
+network, no tokens. For stronger (semantic) healing, create a <code>.env</code> file with your AI
+provider (see <a href="#supported-ai-providers">Supported AI providers</a>):</p>
+
+<pre><code class="language-sh">HEALER_ENABLED=true
+HEALER_PROVIDER=ollama
+OLLAMA_MODEL=gpt-oss:120b
+OLLAMA_API_KEY=your_key_here
+</code></pre>
+
+<p><strong>No API key issued to you?</strong> If you have a personal Claude or GitHub Copilot
+subscription (including the free Copilot tier), use that instead — no key to paste anywhere:</p>
+
+<pre><code class="language-sh">HEALER_PROVIDER=claude-subscription
+CLAUDE_SUBSCRIPTION_MODEL=claude-haiku-4-5
+</code></pre>
+
+<p>Verify your setup, then run tests as usual:</p>
+
+<pre><code class="language-sh">mvn exec:java -Dexec.args="doctor"
+mvn test
+</code></pre>
+
+<p>Full guide: <a href="guide.html">tamash-selenium docs</a>. Working example (JUnit 5, TestNG,
+Cucumber, POM, PageFactory, keyword-driven, and a deliberately-broken-locator demo, run against a
+live app): <a href="https://github.com/qtpsudhakarproducts/tamash-selenium-java-sample"><code>tamash-selenium-java-sample</code></a>.</p>
+
+<h2 id="supported-ai-providers">Supported AI providers</h2>
+<p>Pick whichever fits your budget and environment. Configuration is via environment variables
+(typically loaded from a <code>.env</code> file).</p>
+<table>
+<thead><tr><th>Provider</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>tamash</code></td><td><strong>Free, no AI</strong> — text-matches the element's decoded name against the page's DOM snapshot. No key, no network, no tokens. The default.</td></tr>
+<tr><td><strong>Ollama</strong></td><td>Free key (Ollama Cloud) or your own self-hosted server (<code>ollama-local</code>) — good default for trying AI healing.</td></tr>
+<tr><td><strong>OpenAI</strong></td><td>Requires an OpenAI API key.</td></tr>
+<tr><td><strong>Anthropic</strong></td><td>Requires an Anthropic API key.</td></tr>
+<tr><td><strong>Gemini</strong></td><td>Requires a Google Gemini API key. Use a <code>-flash-lite</code> model.</td></tr>
+<tr><td><strong>Claude subscription</strong></td><td>No API key — uses a personal Claude Pro/Max/Team/Enterprise subscription. Works unattended in CI too, via a <code>claude setup-token</code> token.</td></tr>
+<tr><td><strong>GitHub Copilot subscription</strong></td><td>No API key — uses a personal Copilot subscription, including the free tier.</td></tr>
+</tbody>
+</table>
+<p>See the <a href="guide.html#step-2-connect-an-ai-provider">full guide's provider section</a> for
+exact variable names and one-time CLI setup for the two subscription providers.</p>
+
+<h2 id="sample-implementation">Sample implementation</h2>
+<p>Want to see it wired into a real framework before you touch your own?</p>
+<table>
+<thead><tr><th>Framework</th><th>Repo</th></tr></thead>
+<tbody>
+<tr><td>JUnit 5 · TestNG · Cucumber · POM · PageFactory</td><td><a href="https://github.com/qtpsudhakarproducts/tamash-selenium-java-sample">tamash-selenium-java-sample</a></td></tr>
+</tbody>
+</table>
+
+<h2 id="getting-support-reporting-bugs-requesting-features">Getting support, reporting bugs, requesting features</h2>
+<p>All support for <code>tamash-selenium</code> is handled through this repository's
+<a href="https://github.com/qtpsudhakarproducts/tamash-selenium/issues">Issues</a>.</p>
+<p>Open a new issue and pick the template that matches what you need:</p>
+<table>
+<thead><tr><th>Template</th><th>Use it for</th></tr></thead>
+<tbody>
+<tr><td>🐛 <strong>Bug report</strong></td><td>Something isn't working as documented (healing fails unexpectedly, wrong selector suggested, crash, install/config problem, etc.)</td></tr>
+<tr><td>🚀 <strong>Feature request</strong></td><td>An idea for a new capability, a new provider, or an improvement</td></tr>
+<tr><td>🙋 <strong>Support request</strong></td><td>"How do I…", configuration help, or anything you're stuck on</td></tr>
+</tbody>
+</table>
+<p>Each template asks you to select your <strong>Framework</strong> (JUnit 5 / TestNG / Cucumber),
+plus the package version, provider, and relevant logs — used to automatically label your issue and
+route it to the right context faster.</p>
+<p>Before opening a new issue, please search
+<a href="https://github.com/qtpsudhakarproducts/tamash-selenium/issues?q=is%3Aissue">existing issues</a>
+to avoid duplicates.</p>
+
+<h2 id="filtering-issues-by-framework">Filtering issues by framework</h2>
+<p>Every issue opened through a template is automatically labeled based on the Framework you
+selected, using labels like <code>framework: junit5</code>, <code>framework: testng</code>,
+<code>framework: cucumber</code>, along with the standard <code>bug</code> / <code>enhancement</code>
+/ <code>question</code> type labels.</p>
+<p>Use the <a href="https://github.com/qtpsudhakarproducts/tamash-selenium/labels">Issues label
+filter</a> or a search query to narrow things down, for example:</p>
+<ul>
+<li>All TestNG issues: <a href="https://github.com/qtpsudhakarproducts/tamash-selenium/issues?q=is%3Aissue+label%3A%22framework%3A+testng%22"><code>label:"framework: testng"</code></a></li>
+<li>Open bugs: <a href="https://github.com/qtpsudhakarproducts/tamash-selenium/issues?q=is%3Aissue+is%3Aopen+label%3Abug"><code>label:bug is:open</code></a></li>
+</ul>
+
+<h2 id="license">License</h2>
+<p><a href="https://github.com/qtpsudhakarproducts/tamash-selenium/blob/main/LICENSE">Apache License, Version 2.0</a>
+— free to use, modify, and redistribute, including commercially, as long as you keep the copyright
+and license notices. Contributions welcome — see
+<a href="https://github.com/qtpsudhakarproducts/tamash-selenium/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>.</p>
+
+<hr>
+<p><strong>Links:</strong>
+<a href="https://central.sonatype.com/artifact/com.vibetestq.qtpsudhakar/tamash-selenium">Maven Central</a> ·
+<a href="https://github.com/qtpsudhakarproducts/tamash-selenium">Source</a> ·
+<a href="https://github.com/qtpsudhakarproducts/tamash-selenium-java-sample">Sample repo</a> ·
+<a href="https://qtpsudhakarproducts.github.io/tamash-playwright-support/">tamash-playwright (sibling project)</a></p>
+
+</main>
+<footer>
+  Published from <code>tamash-selenium</code> via GitHub Actions.
+</footer>
+</body>
+</html>

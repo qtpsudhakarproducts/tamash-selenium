@@ -2,6 +2,9 @@
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Maven Central](https://img.shields.io/maven-central/v/com.vibetestq.qtpsudhakar/tamash-selenium.svg)](https://central.sonatype.com/artifact/com.vibetestq.qtpsudhakar/tamash-selenium)
+[![Docs](https://img.shields.io/badge/docs-site-1a73e8.svg)](https://qtpsudhakarproducts.github.io/tamash-selenium/)
+
+📖 **[Full documentation & support →](https://qtpsudhakarproducts.github.io/tamash-selenium/)**
 
 Plug-and-play self-healing for **Selenium Java**. Wrap your `WebDriver` once and every
 `findElement` through it — in Page Objects, `@FindBy` fields, helper/util layers, inside a
