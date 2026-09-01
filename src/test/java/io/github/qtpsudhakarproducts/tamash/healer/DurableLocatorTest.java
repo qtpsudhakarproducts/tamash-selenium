@@ -60,6 +60,15 @@ class DurableLocatorTest {
   }
 
   @Test
+  void findRuleBasedMatch_tokenSetFallback_matchesReorderedExtraWords() {
+    var nodes = DurableLocator.parseAriaAiTree(SNAPSHOT);
+    // "Username field" isn't a substring of the "Username" label — token-set matching still finds it.
+    AiSuggestion s = DurableLocator.findRuleBasedMatch(nodes, "Username field", "textbox");
+    assertEquals("ref", s.getStrategy());
+    assertEquals("e5", s.getRef());
+  }
+
+  @Test
   void stripGenericRoleSuffix() {
     assertEquals("Employee Id", DurableLocator.stripGenericRoleSuffix("Employee Id Textbox"));
     assertEquals("Submit", DurableLocator.stripGenericRoleSuffix("Submit Button"));

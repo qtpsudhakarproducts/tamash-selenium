@@ -49,8 +49,9 @@ public final class ApplyHeals {
     for (int i = 0; i < targetLine - 1; i++) {
       lineStart += lines[i].length() + 1;
     }
-    Matcher m = FACTORY_METHOD_PATTERN.matcher(lines[targetLine - 1]);
-    if (!m.find()) {
+    String line = lines[targetLine - 1];
+    Matcher m = FACTORY_METHOD_PATTERN.matcher(line);
+    if (!m.find() || inLineComment(line, m.start())) {
       return null;
     }
     int dotIndex = lineStart + m.start();
@@ -79,7 +80,7 @@ public final class ApplyHeals {
       lineStart += lines[i].length() + 1;
     }
     Matcher m = FINDBY_PATTERN.matcher(lines[targetLine - 1]);
-    if (!m.find()) {
+    if (!m.find() || inLineComment(lines[targetLine - 1], m.start())) {
       return null;
     }
     int annStart = lineStart + m.start();
@@ -90,6 +91,23 @@ public final class ApplyHeals {
 
   static boolean isCompositeFindBy(String annotationText) {
     return annotationText.startsWith("@FindBys") || annotationText.startsWith("@FindAll");
+  }
+
+  /** True if position {@code pos} on {@code line} is after an (unquoted) {@code //} — i.e. commented
+   *  out. A {@code By.x("…")} written in a comment must never be rewritten as if it were code. */
+  private static boolean inLineComment(String line, int pos) {
+    char inString = 0;
+    for (int i = 0; i < pos && i < line.length(); i++) {
+      char c = line.charAt(i);
+      if (inString != 0) {
+        if (c == '\\') { i++; } else if (c == inString) { inString = 0; }
+      } else if (c == '"' || c == '\'') {
+        inString = c;
+      } else if (c == '/' && i + 1 < line.length() && line.charAt(i + 1) == '/') {
+        return true;
+      }
+    }
+    return false;
   }
 
   private static Integer scanBalancedParens(String content, int openParenIndex) {
