@@ -104,7 +104,7 @@ what was *actually run*, not what was written.
 | `SelfHealingDemoTest` (junit5 + testng) — guard the heal-metadata assertions behind `Healer.isHealingEnabled()` so `verify-heals` (healing off, locators rewritten) passes on the page-state assertions | ✅ 2026-09-01 |
 | Full round-trip verified locally against the sample (heal via anthropic → apply-heals → verify-heals passes) | ✅ 2026-09-01 |
 | Re-verify `claude-subscription`, `copilot-subscription`, `ollama` locally | ✅ 2026-09-01 — all pass `AiHealingE2ETest`; `ollama` + `claude-subscription` also pass `ActionRecoveryTest` |
-| Actually run the library CI + sample CI | ☐ needs the user — see Phase 6 |
+| Actually run the library CI + sample CI | ✅ 2026-09-01 — both green on `0.1.0-beta.4`. Library run `33528061152`; sample run on beta.4 confirmed the `apply-heals` job generates a real `verify-heals.sh` (`Tests to re-verify: …SelfHealingDemoTest`) and it passes with healing off. |
 
 ### Phase 4 — Action recovery
 

@@ -141,7 +141,12 @@ Kicked off closing the gap to `tamash-playwright`'s verification bar (see roadma
 - `0.1.0-beta.4` published to Maven Central and resolvable on `repo1.maven.org` (deployment
   `08acb36f-b5ea-47bc-af29-24f91a3a11d2`; the publish sat in `PUBLISHING` for ~2.5h — a Central
   Portal queue delay, no incident — then completed). GitHub Pages docs site live at
-  https://qtpsudhakarproducts.github.io/tamash-selenium/. Sample repo bumped to `beta.4`.
+  https://qtpsudhakarproducts.github.io/tamash-selenium/. Sample repo bumped to `beta.4` — its
+  `apply-heals` CI job now exercises the real generated `verify-heals.sh` (confirmed:
+  `Tests to re-verify: …SelfHealingDemoTest`, passes with `HEALER_ENABLED=false`). A pre-existing
+  free-app flake in the TestNG job's `AddEmployeePomTest.isSaved()` was hardened (45s wait + a
+  TestNG `IRetryAnalyzer`, since Surefire's `rerunFailingTestsCount` is ignored with a `testng.xml`
+  suite file).
 - **Sample repo CI ran for real, first time, fully green** (run `33528507241`): `TestNG`,
   `JUnit 5 + Cucumber`, `Heal demo` for openai/anthropic/gemini/ollama (all 4 — the ollama leg
   is new), and the new **`apply-heals round trip`** job — heal → `apply-heals --yes` → verify
