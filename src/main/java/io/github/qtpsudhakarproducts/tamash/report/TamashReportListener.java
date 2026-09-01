@@ -1,5 +1,8 @@
 package io.github.qtpsudhakarproducts.tamash.report;
 
+import io.github.qtpsudhakarproducts.tamash.CurrentTest;
+import io.github.qtpsudhakarproducts.tamash.Tamash;
+import io.github.qtpsudhakarproducts.tamash.healer.HealCache;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.support.descriptor.MethodSource;
 import org.junit.platform.launcher.TestExecutionListener;
@@ -7,11 +10,16 @@ import org.junit.platform.launcher.TestIdentifier;
 import org.junit.platform.launcher.TestPlan;
 
 /**
- * Auto-registered (via {@code META-INF/services}) JUnit Platform listener that drives
- * {@link TamashReport}: enables it at session start when {@code TAMASH_REPORT} points at an output
- * path, tracks per-test timing/status, and renders the HTML at session end. The Java analogue of
- * the Python port's {@code pytest_configure} / {@code pytest_runtest_*} / {@code
- * pytest_sessionfinish} hooks.
+ * Auto-registered (via {@code META-INF/services}) JUnit Platform listener. It:
+ * <ul>
+ *   <li>attributes each heal to its test ({@link CurrentTest}) and clears the per-test heal cache /
+ *       hint around every test — so a bare {@code SelfHealingDriver.wrap(...)} with no
+ *       {@code @UseTamashSelenium} still gets per-test heal attribution and isolation;</li>
+ *   <li>drives {@link TamashReport} when {@code TAMASH_REPORT} points at an output path — per-test
+ *       timing/status, and the HTML render at session end.</li>
+ * </ul>
+ * When a framework integration is also active its {@code beforeEach} sets the same {@link CurrentTest}
+ * values immediately after (idempotent).
  */
 public final class TamashReportListener implements TestExecutionListener {
 
@@ -28,31 +36,59 @@ public final class TamashReportListener implements TestExecutionListener {
     TamashReport.enableIfConfigured();
   }
 
+  private static String methodName(TestIdentifier id) {
+    return id.getSource()
+        .filter(s -> s instanceof MethodSource)
+        .map(s -> ((MethodSource) s).getMethodName())
+        .orElse(null);
+  }
+
+  private static void endTest() {
+    CurrentTest.clear();
+    Tamash.clearHint();
+    HealCache.clear();
+    TamashReport.setCurrentTest(null);
+  }
+
   @Override
   public void executionStarted(TestIdentifier id) {
-    if (id.isTest() && TamashReport.isEnabled()) {
-      TamashReport.startTest(testId(id));
+    if (!id.isTest()) {
+      return;
+    }
+    String tid = testId(id);
+    id.getSource().filter(s -> s instanceof MethodSource).map(s -> (MethodSource) s).ifPresent(s ->
+        CurrentTest.set(new CurrentTest.Info(s.getClassName(), methodName(id), id.getDisplayName())));
+    TamashReport.setCurrentTest(tid);
+    if (TamashReport.isEnabled()) {
+      TamashReport.startTest(tid);
     }
   }
 
   @Override
   public void executionFinished(TestIdentifier id, TestExecutionResult result) {
-    if (!id.isTest() || !TamashReport.isEnabled()) {
+    if (!id.isTest()) {
       return;
     }
-    String status = switch (result.getStatus()) {
-      case SUCCESSFUL -> "passed";
-      case FAILED -> "failed";
-      case ABORTED -> "skipped";
-    };
-    TamashReport.finishTest(testId(id), status);
+    if (TamashReport.isEnabled()) {
+      String status = switch (result.getStatus()) {
+        case SUCCESSFUL -> "passed";
+        case FAILED -> "failed";
+        case ABORTED -> "skipped";
+      };
+      TamashReport.finishTest(testId(id), status);
+    }
+    endTest();
   }
 
   @Override
   public void executionSkipped(TestIdentifier id, String reason) {
-    if (id.isTest() && TamashReport.isEnabled()) {
+    if (!id.isTest()) {
+      return;
+    }
+    if (TamashReport.isEnabled()) {
       TamashReport.finishTest(testId(id), "skipped");
     }
+    endTest();
   }
 
   @Override
