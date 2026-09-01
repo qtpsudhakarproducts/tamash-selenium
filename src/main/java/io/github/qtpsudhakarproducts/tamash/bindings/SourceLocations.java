@@ -162,6 +162,37 @@ public final class SourceLocations {
       Pattern.compile("(\\bWebElement\\b|\\bList\\s*<)");
 
   /**
+   * When the failing {@code findElement} call site references a locator held in a {@code By} field
+   * (e.g. {@code private final By loginBtn = By.id("old"); ... driver.findElement(loginBtn)}), the
+   * call site has no {@code By.…} literal for {@code apply-heals} to rewrite. This finds the field's
+   * <em>declaration</em> line — {@code <name> = By.<x>(…)} — in the same source file, as a
+   * {@code "path:line"}. Returns null when the file or a matching declaration can't be found.
+   */
+  public static String locateByFieldDeclaration(String callSiteLocation, String fieldName) {
+    if (callSiteLocation == null || fieldName == null || fieldName.isBlank()) {
+      return null;
+    }
+    int sep = callSiteLocation.lastIndexOf(':');
+    if (sep == -1) {
+      return null;
+    }
+    String filePath = callSiteLocation.substring(0, sep);
+    List<String> lines;
+    try {
+      lines = Files.readAllLines(Path.of("").toAbsolutePath().resolve(filePath), StandardCharsets.UTF_8);
+    } catch (IOException e) {
+      return null;
+    }
+    Pattern decl = Pattern.compile("\\b" + Pattern.quote(fieldName) + "\\b\\s*=\\s*By\\s*\\.");
+    for (int i = 0; i < lines.size(); i++) {
+      if (decl.matcher(lines.get(i)).find()) {
+        return filePath + ":" + (i + 1);
+      }
+    }
+    return null;
+  }
+
+  /**
    * Locates the {@code @FindBy} / {@code @FindBys} / {@code @FindAll} annotation that decorates a
    * PageFactory field, as a repo-relative {@code "path:line"} pointing at the annotation's first
    * line — so {@code apply-heals} can rewrite the annotation. Returns null if the source file or

@@ -866,6 +866,15 @@ public final class Healer {
       entry.newLocator = DurableLocator.generateReplacementCall(suggestion);
       entry.newFindBy = DurableLocator.generateFindByAnnotation(suggestion);
     }
+    // When the failing call site referenced a `By` field (not an inline literal / @FindBy), the
+    // recorded line has nothing for apply-heals to rewrite — point it at the field declaration.
+    if (c.rawVariableName != null && !c.rawVariableName.isBlank()) {
+      String declLoc = io.github.qtpsudhakarproducts.tamash.bindings.SourceLocations
+          .locateByFieldDeclaration(report.sourceLocation, c.rawVariableName);
+      if (declLoc != null && !declLoc.equals(report.sourceLocation)) {
+        entry.declarationLocation = declLoc;
+      }
+    }
     entry.testSelector = c.testSelector;
     entry.testTitle = c.testTitle;
     entry.usedCache = usedCache;

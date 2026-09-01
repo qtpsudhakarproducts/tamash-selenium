@@ -79,6 +79,36 @@ class ApplyHealsTest {
   }
 
   @Test
+  void planFixes_rewritesByFieldDeclarationWhenCallSiteHasNoLiteral(@TempDir Path cwd) throws Exception {
+    Path pkg = cwd.resolve("src/test/java/com/foo");
+    Files.createDirectories(pkg);
+    Path file = pkg.resolve("AddEmployeePage.java");
+    Files.writeString(file,
+        "package com.foo;\n"
+        + "class AddEmployeePage {\n"
+        + "  private final By firstName = By.name(\"first_name\");\n"       // line 3 — declaration
+        + "  WebElement first() { return getElement(firstName); }\n"        // line 4 — call site
+        + "}\n");
+
+    HealLog.Entry e = new HealLog.Entry();
+    e.timestamp = "2026-08-28T10:00:00Z";
+    e.file = "src/test/java/com/foo/AddEmployeePage.java";
+    e.line = 4;                                                            // recorded at the call
+    e.declarationLocation = "src/test/java/com/foo/AddEmployeePage.java:3"; // resolved to the field
+    e.action = "sendKeys";
+    e.suggestion = AiSuggestion.nameAttr("firstName");
+
+    ApplyHeals.Plan plan = ApplyHeals.planFixes(cwd, java.util.List.of(e));
+    ApplyHeals.FixOutcome o = plan.outcomes().get(0);
+    assertTrue(o.applied(), o.reason());
+    assertEquals(3, o.line());
+    assertEquals("By.name(\"first_name\")", o.before());
+    assertEquals("By.name(\"firstName\")", o.after());
+    assertTrue(plan.fileContents().values().iterator().next()
+        .contains("private final By firstName = By.name(\"firstName\");"));
+  }
+
+  @Test
   void planFixes_skipsAuditOnlyEntry(@TempDir Path cwd) throws Exception {
     Path pkg = cwd.resolve("src/test/java/com/foo");
     Files.createDirectories(pkg);

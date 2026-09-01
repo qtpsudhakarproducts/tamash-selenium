@@ -175,18 +175,36 @@ public final class ApplyHeals {
         continue;
       }
       boolean changed = false;
+      // The line each entry will actually be rewritten at: the call site, unless it references a
+      // `By` field (no By.x(...) literal there) and the declaration is in this same file.
+      Map<HealLog.Entry, Integer> targetLines = new LinkedHashMap<>();
+      for (HealLog.Entry e : fe.getValue()) {
+        int t = e.line;
+        if (e.declarationLocation != null && findFactoryCallOnLine(content, e.line) == null) {
+          int sep = e.declarationLocation.lastIndexOf(':');
+          if (sep != -1 && e.declarationLocation.substring(0, sep).replace('\\', '/').endsWith(relativeFile)) {
+            try {
+              t = Integer.parseInt(e.declarationLocation.substring(sep + 1));
+            } catch (NumberFormatException ignored) {
+              // keep e.line
+            }
+          }
+        }
+        targetLines.put(e, t);
+      }
       List<HealLog.Entry> sorted = new ArrayList<>(fe.getValue());
-      sorted.sort((a, b) -> Integer.compare(b.line, a.line)); // bottom-to-top
+      sorted.sort((a, b) -> Integer.compare(targetLines.get(b), targetLines.get(a))); // bottom-to-top
 
       for (HealLog.Entry e : sorted) {
         if (e.suggestion == null) {
           outcomes.add(new FixOutcome(relativeFile, e.line, "", "", false,
               e.reviewNote != null ? e.reviewNote
-                  : "This heal produced no durable selector to apply (a one-shot element reference or visual match).",
+                  : "This heal produced no durable selector to apply (a one-shot element reference).",
               null, null));
           continue;
         }
-        CallRange range = findFactoryCallOnLine(content, e.line);
+        int targetLine = targetLines.get(e);
+        CallRange range = findFactoryCallOnLine(content, targetLine);
         String replacement = range != null ? DurableLocator.generateReplacementCall(e.suggestion) : null;
         boolean annotation = false;
         Boolean needsReview = e.needsReview;
@@ -195,6 +213,9 @@ public final class ApplyHeals {
         if (range == null) {
           // Not a By.xxx(...) call — try a @FindBy / @FindBys / @FindAll annotation (PageFactory).
           range = findFindByAnnotationOnLine(content, e.line);
+          if (range == null && targetLine != e.line) {
+            range = findFindByAnnotationOnLine(content, targetLine);
+          }
           if (range != null) {
             annotation = true;
             replacement = DurableLocator.generateFindByAnnotation(e.suggestion);
@@ -214,14 +235,14 @@ public final class ApplyHeals {
           } else {
             reason = "Unsupported suggestion strategy \"" + e.suggestion.getStrategy() + "\".";
           }
-          outcomes.add(new FixOutcome(relativeFile, e.line, "", "", false, reason, null, null));
+          outcomes.add(new FixOutcome(relativeFile, targetLine, "", "", false, reason, null, null));
           continue;
         }
         String before = content.substring(range.dotIndex(), range.callEnd());
         String after = replacement;
         content = content.substring(0, range.dotIndex()) + after + content.substring(range.callEnd());
         changed = true;
-        outcomes.add(new FixOutcome(relativeFile, e.line, before, after, true, null, needsReview, reviewNote));
+        outcomes.add(new FixOutcome(relativeFile, targetLine, before, after, true, null, needsReview, reviewNote));
       }
       if (changed) {
         fileContents.put(fullPath, content);

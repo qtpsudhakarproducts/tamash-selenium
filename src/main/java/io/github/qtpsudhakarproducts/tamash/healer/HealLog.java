@@ -31,6 +31,8 @@ public final class HealLog {
     public AiSuggestion suggestion; // absent for a one-shot ref/vision heal
     public String newLocator;       // ready-to-read "By.name(\"firstName\")" (rendered from suggestion)
     public String newFindBy;        // "@FindBy(name = \"firstName\")" equivalent, for PageFactory fields
+    public String declarationLocation; // "path:line" of the `By field = By.x(...)` declaration, when the
+                                       // call site referenced a field (no literal to rewrite there)
     public String testSelector;     // "com.foo.LoginTest#logsIn" for `mvn test -Dtest=...`
     public String testTitle;
     public boolean usedCache;
@@ -48,6 +50,7 @@ public final class HealLog {
       if (suggestion != null) o.put("suggestion", suggestion.toJson());
       if (newLocator != null) o.put("newLocator", newLocator);
       if (newFindBy != null) o.put("newFindBy", newFindBy);
+      if (declarationLocation != null) o.put("declarationLocation", declarationLocation);
       if (testSelector != null) o.put("testSelector", testSelector);
       if (testTitle != null) o.put("testTitle", testTitle);
       if (usedCache) o.put("usedCache", true);
@@ -67,6 +70,7 @@ public final class HealLog {
       e.suggestion = o.has("suggestion") ? AiSuggestion.fromJson(o.optJSONObject("suggestion")) : null;
       e.newLocator = o.has("newLocator") ? o.optString("newLocator") : null;
       e.newFindBy = o.has("newFindBy") ? o.optString("newFindBy") : null;
+      e.declarationLocation = o.has("declarationLocation") ? o.optString("declarationLocation") : null;
       e.testSelector = o.has("testSelector") ? o.optString("testSelector") : null;
       e.testTitle = o.has("testTitle") ? o.optString("testTitle") : null;
       e.usedCache = o.optBoolean("usedCache", false);
