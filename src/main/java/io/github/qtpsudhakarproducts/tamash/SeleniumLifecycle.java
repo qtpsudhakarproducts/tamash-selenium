@@ -72,6 +72,11 @@ public final class SeleniumLifecycle {
         if (headless) o.addArguments("--headless=new", "--disable-gpu");
         yield new org.openqa.selenium.edge.EdgeDriver(o);
       }
+      case "safari" -> {
+        // Safari has no headless mode; HEADLESS is ignored. macOS only, and
+        // `safaridriver --enable` must have been run once.
+        yield new org.openqa.selenium.safari.SafariDriver();
+      }
       default -> {
         ChromeOptions o = new ChromeOptions();
         if (headless) o.addArguments("--headless=new", "--disable-gpu");

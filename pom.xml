@@ -39,8 +39,8 @@
   </scm>
 
   <properties>
-    <maven.compiler.source>25</maven.compiler.source>
-    <maven.compiler.target>25</maven.compiler.target>
+    <!-- Java 21 (LTS) so the artifact runs on the JDK most Selenium suites are on. -->
+    <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     <selenium.version>4.27.0</selenium.version>
@@ -98,14 +98,16 @@
       <optional>true</optional>
     </dependency>
 
-    <!-- Default (compile) scope, not test scope: TamashSeleniumExtension in src/main/java
-         implements JUnit 5's extension interfaces, so consumers need this API available even
-         though they're not running *our* tests — only the interfaces are needed here, not the
-         engine. -->
+    <!-- TamashSeleniumExtension (src/main/java) implements JUnit 5's extension interfaces, so this
+         API is on our compile classpath. Marked <optional> so it is NOT forced onto consumers: a
+         JUnit 5 project already declares junit-jupiter itself; a TestNG-only project must not get
+         junit-jupiter-api transitively, or Surefire auto-selects the JUnit Platform provider and
+         silently runs zero tests. -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <version>${junit.version}</version>
+      <optional>true</optional>
     </dependency>
 
     <!-- Needed to actually run this project's own tests; consumers bring their own

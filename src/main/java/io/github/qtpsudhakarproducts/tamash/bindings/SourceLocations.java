@@ -49,6 +49,39 @@ public final class SourceLocations {
   private static final List<String> SOURCE_ROOTS = List.of(
       "src/test/java", "src/main/java", "src/it/java", "test", "src");
 
+  /** Extra roots to probe for consumer source, beyond {@link #SOURCE_ROOTS} under the CWD.
+   *  {@code TAMASH_SOURCE_ROOTS} (comma-separated, relative to CWD or absolute) plus, always,
+   *  every sibling module's {@code src/{main,test}/java} — so a multi-module build where the Page
+   *  Objects live in one module and the running test in another still resolves descriptions. */
+  private static List<Path> extraSourceRoots() {
+    Path cwd = Path.of("").toAbsolutePath();
+    List<Path> roots = new java.util.ArrayList<>();
+    String configured = System.getProperty("TAMASH_SOURCE_ROOTS");
+    if (configured == null) {
+      configured = System.getenv("TAMASH_SOURCE_ROOTS");
+    }
+    if (configured != null && !configured.isBlank()) {
+      for (String r : configured.split("[,;" + java.io.File.pathSeparator + "]")) {
+        if (!r.isBlank()) {
+          roots.add(cwd.resolve(r.trim()));
+        }
+      }
+    }
+    // sibling modules: ../*/src/{main,test}/java
+    Path parent = cwd.getParent();
+    if (parent != null) {
+      try (var siblings = Files.list(parent)) {
+        siblings.filter(Files::isDirectory).forEach(sib -> {
+          roots.add(sib.resolve("src/main/java"));
+          roots.add(sib.resolve("src/test/java"));
+        });
+      } catch (IOException ignored) {
+        // best-effort
+      }
+    }
+    return roots;
+  }
+
   /** The consumer's call site: a repo-relative {@code "path:line"} plus the simple name of the
    *  class it's in (a Page Object / test class — useful extra context for the AI finder). */
   public record Caller(String location, String simpleClassName) {}
@@ -213,6 +246,14 @@ public final class SourceLocations {
       Path candidate = cwd.resolve(root).resolve(packagePath).resolve(fileName);
       if (Files.isRegularFile(candidate)) {
         return cwd.relativize(candidate).toString().replace('\\', '/');
+      }
+    }
+    // A multi-module build (or TAMASH_SOURCE_ROOTS) — resolve to an absolute path; callers that
+    // read the file cope with either form, and the "path:line" is still stable within the run.
+    for (Path root : extraSourceRoots()) {
+      Path candidate = root.resolve(packagePath).resolve(fileName);
+      if (Files.isRegularFile(candidate)) {
+        return candidate.toString().replace('\\', '/');
       }
     }
     return null;
