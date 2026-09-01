@@ -7,6 +7,7 @@ import com.vibetestq.qtpsudhakar.tamash.junit.UseTamashSelenium;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -60,5 +61,26 @@ class WaitHealingTest {
     long cacheHeals = healed.stream().filter(r -> "cache".equals(r.getProvider())).count();
     assertTrue(snapshotHeals <= 2, "wait polling should not trigger repeated snapshot heals — got " + snapshotHeals);
     assertTrue(cacheHeals >= 1, "the wait's later polls should reuse the cached heal — got " + cacheHeals);
+  }
+
+  /**
+   * A {@code WebDriverWait} on an element that genuinely never appears must time out like vanilla
+   * Selenium — healing a locator on every poll would be wasteful and a mid-wait "heal" would mask
+   * a real "never appeared". Mirrors pw-java's {@code waitForOnAbsentElementIsNeverAiHealed}.
+   */
+  @Test
+  void waitOnGenuinelyAbsentElementTimesOutAndDoesNotHeal(WebDriver driver) {
+    driver.get(PAGE);
+    By ghost = By.id("banner-that-never-appears");
+
+    assertThrows(TimeoutException.class, () ->
+        new WebDriverWait(driver, Duration.ofSeconds(2))
+            .until(ExpectedConditions.visibilityOfElementLocated(ghost)));
+
+    boolean anyHealedForGhost = Healer.getHealingReports().stream()
+        .filter(SelfHealingReport::isHealed)
+        .anyMatch(r -> r.testSelector != null
+            && r.testSelector.contains("waitOnGenuinelyAbsentElementTimesOutAndDoesNotHeal"));
+    assertFalse(anyHealedForGhost, "an element that never appears must not be 'healed'");
   }
 }

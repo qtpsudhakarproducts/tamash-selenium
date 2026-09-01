@@ -31,7 +31,7 @@ For a shorter overview see [README.md](README.md). This file is the complete ref
 <dependency>
   <groupId>com.vibetestq.qtpsudhakar</groupId>
   <artifactId>tamash-selenium</artifactId>
-  <version>0.1.0-beta.3</version>
+  <version>0.1.0-beta.4</version>
 </dependency>
 ```
 
@@ -389,8 +389,9 @@ three runners; zero overhead when `TAMASH_REPORT` is unset.
 
 | Command | Flags | What it does |
 |---|---|---|
-| `mvn exec:java -Dexec.args="doctor"` | `--dir <path>` | Pre-flight checks: connectivity, implicit wait, locator naming, inline locators. |
+| `mvn exec:java -Dexec.args="doctor"` | `--dir <path>` | Pre-flight checks: connectivity, implicit wait, locator naming, inline locators, agent-skill install state. |
 | `mvn exec:java -Dexec.args="apply-heals"` | `--dry-run`, `--logs-dir <path>`, `--yes` | Rewrite healed locators into source, write reports + a verify script. |
+| `mvn exec:java -Dexec.args="init-skill"` | `--target claude\|agents`, `--user`, `--force`, `--dry-run`, `--dir <path>` | Copy the coding-agent skill into `.claude/skills/` and `.agents/skills/`. |
 
 ---
 

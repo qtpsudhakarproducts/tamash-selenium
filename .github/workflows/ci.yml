@@ -1,0 +1,120 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---- The gate: full unit + rule-based browser suite, no secrets ----------
+  test:
+    name: mvn test (unit + rule-based e2e)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Set up Chrome
+        uses: browser-actions/setup-chrome@v2
+        with:
+          chrome-version: stable
+
+      - name: Unit tests
+        run: mvn -B test
+
+      - name: Rule-based browser suite
+        run: mvn -B test -Pbrowser -DHEADLESS=true -Dsurefire.rerunFailingTestsCount=2
+
+      - name: Upload surefire reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          if-no-files-found: ignore
+
+  # ---- Build the jar + run the CLI doctor as a smoke check ----------------
+  package:
+    name: package + doctor smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Build (skip tests — the `test` job covers them)
+        run: mvn -B -DskipTests package
+
+      - name: doctor
+        run: mvn -B -q exec:java -Dexec.args="doctor" || true
+
+  # ---- AI providers: informational, gated on org/repo secrets -------------
+  ai-providers:
+    name: Real-AI heal (${{ matrix.provider }})
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [openai, anthropic, gemini]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check for API key
+        id: gate
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          case "${{ matrix.provider }}" in
+            openai)    key="$OPENAI_API_KEY" ;;
+            anthropic) key="$ANTHROPIC_API_KEY" ;;
+            gemini)    key="$GEMINI_API_KEY" ;;
+          esac
+          if [ -n "$key" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "run=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Set up JDK 21
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Set up Chrome
+        if: steps.gate.outputs.run == 'true'
+        uses: browser-actions/setup-chrome@v2
+        with:
+          chrome-version: stable
+
+      - name: Real-AI e2e via ${{ matrix.provider }}
+        if: steps.gate.outputs.run == 'true'
+        env:
+          HEALER_PROVIDER: ${{ matrix.provider }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4o-mini' }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: ${{ vars.ANTHROPIC_MODEL || 'claude-haiku-4-5' }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-flash-lite-latest' }}
+        run: >-
+          mvn -B test -Dtest=AiHealingE2ETest,ActionRecoveryTest
+          -DHEADLESS=true
+          -Dsurefire.rerunFailingTestsCount=1

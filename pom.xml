@@ -6,19 +6,17 @@
 
   <groupId>com.vibetestq.qtpsudhakar</groupId>
   <artifactId>tamash-selenium</artifactId>
-  <version>0.1.0-beta.3</version>
+  <version>0.1.0-beta.4</version>
   <packaging>jar</packaging>
 
   <name>tamash-selenium</name>
   <description>Plug-and-play self-healing for Selenium Java (JUnit 5, TestNG, or Cucumber): automatically recovers broken selectors using an AI model (Ollama, OpenAI, Anthropic, Gemini, or a Claude/GitHub Copilot subscription) or a rule-based no-AI provider.</description>
   <url>https://github.com/qtpsudhakarproducts/tamash-selenium</url>
 
-  <!-- Free to use, including commercially; not open source (no copying/modifying/redistributing
-       without permission). See the LICENSE file at the project root for the full terms. -->
   <licenses>
     <license>
-      <name>Custom (free to use, not open source) — see LICENSE file</name>
-      <url>https://github.com/qtpsudhakarproducts/tamash-selenium/blob/main/LICENSE</url>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
       <distribution>repo</distribution>
     </license>
   </licenses>
@@ -170,10 +168,15 @@
       <resource>
         <directory>src/main/resources</directory>
       </resource>
-      <!-- Ship the agent skill (SKILL.md + references + adapters) inside the JAR under skills/, so
-           a consumer can extract it with:
-           mvn dependency:unpack -Dartifact=com.vibetestq.qtpsudhakar:tamash-selenium:<v>
-             -Dmdep.unpack.includes="skills/**" -DoutputDirectory=.claude -->
+      <!-- filtered: bakes ${project.version} into build.properties so Skill.getPackageVersion()
+           works even when run from target/classes (mvn exec:java), not just the packaged jar. -->
+      <resource>
+        <directory>src/main/resources-filtered</directory>
+        <filtering>true</filtering>
+      </resource>
+      <!-- Ship the agent skill (SKILL.md + references/) inside the JAR under skills/, so the
+           `init-skill` CLI (com.vibetestq.qtpsudhakar.tamash.cli.Skill) can copy it into a
+           consumer's .claude/skills/ and .agents/skills/. -->
       <resource>
         <directory>${project.basedir}</directory>
         <targetPath>.</targetPath>
@@ -194,9 +197,9 @@
         <version>3.5.2</version>
         <configuration>
           <!-- The browser / real-AI end-to-end tests are opt-in: they need a local browser (and,
-               for SampleTest, a provider key). Run them explicitly, e.g.
-               `mvn test -Dtest=TamashRuleBasedHealingTest -DHEALER_PROVIDER=tamash`. A `-Dtest=`
-               on the command line overrides these excludes. -->
+               for SampleTest / AiHealingE2ETest, a provider key or live site). Run the rule-based
+               browser suite with `mvn test -Pbrowser`, or one class explicitly with `-Dtest=…`
+               (which overrides these excludes). -->
           <excludes>
             <exclude>**/TamashRuleBasedHealingTest.java</exclude>
             <exclude>**/PageFactoryHealingTest.java</exclude>
@@ -207,6 +210,15 @@
             <exclude>**/TamashHintTest.java</exclude>
             <exclude>**/SampleTest.java</exclude>
             <exclude>**/FrameworkIntegrationTest.java</exclude>
+            <exclude>**/HealingDisabledTest.java</exclude>
+            <exclude>**/SelectHealingTest.java</exclude>
+            <exclude>**/IframeHealingTest.java</exclude>
+            <exclude>**/GetDurableTest.java</exclude>
+            <exclude>**/ReplayArgForwardingTest.java</exclude>
+            <exclude>**/ReportCacheHonestyTest.java</exclude>
+            <exclude>**/AiHealingE2ETest.java</exclude>
+            <exclude>**/ActionRecoveryTest.java</exclude>
+            <exclude>**/ActionRecoveryDisabledTest.java</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -288,4 +300,28 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!-- `mvn test -Pbrowser` — the deterministic browser suite (rule-based `tamash` provider,
+         `data:` pages, a real local Chrome). Excludes only the two tests that need an external
+         resource: SampleTest (live site) and AiHealingE2ETest (a real AI key). -->
+    <profile>
+      <id>browser</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <excludes>
+                <exclude>**/SampleTest.java</exclude>
+                <exclude>**/AiHealingE2ETest.java</exclude>
+                <exclude>**/ActionRecoveryTest.java</exclude>
+              </excludes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

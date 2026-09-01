@@ -79,7 +79,56 @@ public final class Doctor {
     checkLocatorNaming(occurrences);
     checkPageObjectUsage(occurrences);
 
+    checkSkill();
+
     printSummary();
+  }
+
+  private static void checkSkill() {
+    section("Skill");
+    Path cwd = Path.of("").toAbsolutePath();
+    String pkgVersion = Skill.getPackageVersion();
+    boolean anyPresent = false;
+    boolean anyStale = false;
+
+    for (Skill.TargetSpec t : Skill.TARGETS) {
+      Skill.SkillState st = Skill.skillState(cwd, t, pkgVersion);
+      switch (st.status()) {
+        case ABSENT -> System.out.println("  " + dim(t.projectDir() + " — not installed"));
+        case CURRENT -> {
+          anyPresent = true;
+          System.out.println("  " + t.projectDir() + " — " + st.version() + " (current)");
+        }
+        case OUTDATED -> {
+          anyPresent = true;
+          anyStale = true;
+          System.out.println("  " + t.projectDir() + " — " + st.installed()
+              + ", package is " + st.version());
+        }
+        case UNMANAGED -> {
+          anyPresent = true;
+          anyStale = true;
+          System.out.println("  " + t.projectDir() + " — present, no version marker");
+        }
+      }
+    }
+
+    List<String> legacy = Skill.legacyInstallArtifacts(cwd);
+    for (String p : legacy) {
+      System.out.println("  " + dim("leftover from an older setup: " + p));
+    }
+
+    if (!anyPresent) {
+      System.out.println(dim("          run: mvn -q exec:java -Dexec.args=\"init-skill\""));
+      record("Skill", "INFO", "Skill not installed (.claude/skills, .agents/skills)");
+    } else if (anyStale) {
+      System.out.println(dim("          run: mvn -q exec:java -Dexec.args=\"init-skill\" to refresh"));
+      record("Skill", "WARN", "Installed skill is behind the package or unmanaged — run init-skill");
+    } else if (!legacy.isEmpty()) {
+      record("Skill", "INFO", "Skill installed and current; " + legacy.size() + " legacy leftover(s) to delete");
+    } else {
+      record("Skill", "OK", "Skill installed and current");
+    }
   }
 
   private static void checkProviderConnectivity() {

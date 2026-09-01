@@ -267,12 +267,24 @@ public final class ApplyHeals {
       }
     }
 
-    // affected tests: distinct testSelector for every location that actually got fixed
+    // affected tests: distinct testSelector for every location that actually got fixed. An entry
+    // whose fix landed on its `declarationLocation` line (a `By field = By.x(...)` rewrite) won't
+    // match on the call-site `file:line`, so check the declaration line too.
     var appliedLocations = outcomes.stream().filter(FixOutcome::applied)
         .map(o -> o.file() + ":" + o.line()).collect(Collectors.toSet());
     TreeSet<String> affected = new TreeSet<>();
     for (HealLog.Entry e : all) {
-      if (e.testSelector != null && appliedLocations.contains(e.file + ":" + e.line)) {
+      if (e.testSelector == null) {
+        continue;
+      }
+      boolean landed = appliedLocations.contains(e.file + ":" + e.line);
+      if (!landed && e.declarationLocation != null) {
+        int sep = e.declarationLocation.lastIndexOf(':');
+        if (sep != -1) {
+          landed = appliedLocations.contains(e.file + ":" + e.declarationLocation.substring(sep + 1));
+        }
+      }
+      if (landed) {
         affected.add(e.testSelector);
       }
     }

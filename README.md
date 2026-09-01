@@ -1,5 +1,8 @@
 # tamash-selenium
 
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Maven Central](https://img.shields.io/maven-central/v/com.vibetestq.qtpsudhakar/tamash-selenium.svg)](https://central.sonatype.com/artifact/com.vibetestq.qtpsudhakar/tamash-selenium)
+
 Plug-and-play self-healing for **Selenium Java**. Wrap your `WebDriver` once and every
 `findElement` through it — in Page Objects, `@FindBy` fields, helper/util layers, inside a
 `WebDriverWait` — recovers automatically when a locator breaks. Nothing else changes.
@@ -29,7 +32,7 @@ failure.
 <dependency>
   <groupId>com.vibetestq.qtpsudhakar</groupId>
   <artifactId>tamash-selenium</artifactId>
-  <version>0.1.0-beta.3</version>
+  <version>0.1.0-beta.4</version>
 </dependency>
 ```
 
@@ -186,19 +189,23 @@ zero overhead when `TAMASH_REPORT` is unset.
 
 ## Agent skill
 
-The JAR bundles a coding-agent skill (`skills/tamash-selenium/` — `SKILL.md`, onboarding + heal
-references, Cursor / Copilot / `AGENTS.md` adapters) that drives the local
-run → review → `apply-heals` → verify → land loop. Extract it into a project:
+The JAR bundles a coding-agent skill (`SKILL.md` + `references/`) that drives the local
+run → review → `apply-heals` → verify → land loop. Install it into a project:
 
 ```sh
-mvn dependency:unpack -Dartifact=com.vibetestq.qtpsudhakar:tamash-selenium:0.1.0-beta.3 \
-  -Dmdep.unpack.includes="skills/**" -DoutputDirectory=.claude
+mvn exec:java -Dexec.args="init-skill"
 ```
+
+That copies it into both `.claude/skills/tamash-selenium/` (Claude Code) and
+`.agents/skills/tamash-selenium/` (the cross-tool standard — Cursor, Copilot, Windsurf, Kiro, …).
+`--target claude|agents` installs one; `--user` installs for every project on the machine.
+`mvn exec:java -Dexec.args="doctor"` reports whether the installed copy is current.
 
 ## License
 
-Free to use, including commercially. The source code may not be copied, modified, redistributed, or
-resold without prior written permission. See the LICENSE file.
+[Apache License, Version 2.0](LICENSE) — free to use, modify, and redistribute, including
+commercially, as long as you keep the copyright and license notices (see [NOTICE](NOTICE)).
+Contributions welcome.
 
 ## Support
 

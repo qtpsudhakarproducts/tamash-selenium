@@ -3,6 +3,57 @@
 All notable changes to `tamash-selenium` are documented here. It versions independently of the
 Playwright ports; this first release brings the self-healing engine to Selenium Java.
 
+## [0.1.0-beta.4] - 2026-09-01
+
+Verification build-out, skill install, and open-sourcing.
+
+### License
+
+- **Relicensed to Apache License 2.0.** Previously a custom "free to use, not redistributable"
+  license; now anyone may use, modify, and redistribute (including commercially), keeping the
+  copyright/license notices (see `LICENSE` and `NOTICE`). The repository is now public.
+
+### Added
+
+- **`init-skill` CLI** — `mvn exec:java -Dexec.args="init-skill"` copies the coding-agent skill
+  (`SKILL.md` + `references/`) into both `.claude/skills/tamash-selenium/` and
+  `.agents/skills/tamash-selenium/`, the way Playwright's `install --skills` does. `--target`,
+  `--user`, `--force`, `--dry-run`, `--dir`. A `.tamash-selenium-skill` version marker lets
+  `doctor` flag a stale install.
+- **`doctor` Skill check** — reports the install state of each location (current / behind / no
+  marker / absent) and points at `init-skill`.
+- **Test parity build-out** — new coverage matching the Playwright package's bar: `ReportRenderer`,
+  `TamashRuleBasedProvider`, deeper `Prompt` parsing, `Http` retry (`HttpRetryTest`), a dedicated
+  `HEALER_ENABLED=false` test, `<select>` / iframe / stale-replay-arg-forwarding / `getDurable` /
+  report-cache-honesty browser tests, `AiHealingE2ETest` (verified vs openai/anthropic/gemini),
+  `ActionRecoveryTest` (intercepted click recovered — verified vs all three providers) and
+  `ActionRecoveryDisabledTest`. `SkillTest`. Unit ~43 → ~86; `mvn test -Pbrowser` ~123.
+- **Library CI** — `.github/workflows/ci.yml`: `test` (unit + `-Pbrowser`), `package` + `doctor`
+  smoke, gated `ai-providers` matrix.
+- **`browser` Maven profile** — `mvn test` stays unit-only and fast; `mvn test -Pbrowser` runs the
+  rule-based browser suite.
+
+### Fixed
+
+- **`apply-heals` — no verify script for a `By` field rewrite.** When a heal was landed on a
+  `private By field = By.x("…")` declaration line (rather than an inline call or `@FindBy`), the
+  affected-test list came back empty — the match keyed on the call-site line, not the declaration
+  line — so no `verify-heals.sh` was written. Fixed; `ApplyHealsTest` now covers it.
+
+### Changed
+
+- **Skill layout** — the per-agent `adapters/` folder (`AGENTS.md`, `cursor-*.mdc`,
+  `copilot-*.md`) is removed. One `SKILL.md` + `references/` serves every tool via the two
+  standard skill directories; `init-skill` is the install path (the old `dependency:unpack`
+  recipe still works for a manual copy).
+
+### Docs
+
+- `TESTING.md` rewritten to operating-manual depth; new `RELEASE-TESTING.md` (honest coverage
+  matrix) and `TEST-PARITY-ROADMAP.md`.
+
+---
+
 ## [0.1.0-beta.3] - 2026-09-01
 
 Gemini reliability.

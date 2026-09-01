@@ -97,6 +97,7 @@ class ApplyHealsTest {
     e.declarationLocation = "src/test/java/com/foo/AddEmployeePage.java:3"; // resolved to the field
     e.action = "sendKeys";
     e.suggestion = AiSuggestion.nameAttr("firstName");
+    e.testSelector = "com.foo.AddEmployeeTest#addsEmployee";
 
     ApplyHeals.Plan plan = ApplyHeals.planFixes(cwd, java.util.List.of(e));
     ApplyHeals.FixOutcome o = plan.outcomes().get(0);
@@ -106,6 +107,9 @@ class ApplyHealsTest {
     assertEquals("By.name(\"firstName\")", o.after());
     assertTrue(plan.fileContents().values().iterator().next()
         .contains("private final By firstName = By.name(\"firstName\");"));
+    // the verify-heals script must still know which test to re-run, even though the fix landed on
+    // the declaration line (3) and the heal was recorded at the call site (4)
+    assertEquals(java.util.List.of("com.foo.AddEmployeeTest#addsEmployee"), plan.affectedTests());
   }
 
   @Test

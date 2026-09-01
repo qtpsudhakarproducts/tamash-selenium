@@ -10,7 +10,9 @@ public final class Main {
   private Main() {}
 
   private static final String USAGE =
-      "Usage: tamash-selenium doctor [--dir <path>] | apply-heals [--dry-run] [--logs-dir <path>] [--yes]";
+      "Usage: tamash-selenium doctor [--dir <path>]\n"
+      + "     | apply-heals [--dry-run] [--logs-dir <path>] [--yes]\n"
+      + "     | init-skill [--target claude|agents] [--user] [--force] [--dry-run] [--dir <path>]";
 
   public static void main(String[] args) {
     System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
@@ -29,6 +31,7 @@ public final class Main {
           Doctor.runDoctor(dir);
         }
         case "apply-heals" -> ApplyHeals.run(rest);
+        case "init-skill" -> Skill.run(rest);
         case "", "--help", "-h" -> System.out.println(USAGE);
         default -> {
           System.out.println("Unknown command: " + command);

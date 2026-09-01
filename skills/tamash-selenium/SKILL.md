@@ -31,48 +31,31 @@ Don't guess which one applies from what the user says or how the project looks �
 
 ## Getting this skill into a project
 
-No coding agent auto-discovers a skill bundled inside a JAR in the local Maven cache — this is always a real, explicit one-time step after adding the `tamash-selenium` dependency, never automatic. The skill files ship inside the `tamash-selenium` JAR under `skills/tamash-selenium/`.
-
-**Claude Code** — extract straight from the dependency JAR:
+No coding agent auto-discovers a skill bundled inside a JAR in the local Maven cache — this is one explicit step after adding the `tamash-selenium` dependency:
 
 ```bash
-mvn -q dependency:unpack \
-  -Dartifact=com.vibetestq.qtpsudhakar:tamash-selenium:0.1.0-beta.3 \
-  -Dmdep.unpack.includes="skills/**" \
-  -DoutputDirectory=.claude
-# → .claude/skills/tamash-selenium/SKILL.md
+mvn -q exec:java -Dexec.args="init-skill"
 ```
 
-**Kiro** — identical `SKILL.md` format, different root directory (`-DoutputDirectory=.kiro`):
+That copies `SKILL.md` + `references/` into **both** standard locations — the convention Playwright's own `playwright-cli install --skills` established:
+
+- `.claude/skills/tamash-selenium/` — Claude Code
+- `.agents/skills/tamash-selenium/` — the cross-tool standard (Cursor, GitHub Copilot, Windsurf, Kiro, Zed, and others read here)
+
+Same content in both; there is no per-agent format conversion. Flags:
+
+- `--target claude` / `--target agents` — install just one
+- `--user` — install under your home directory (`~/.claude/skills/…`, `~/.agents/skills/…`) to cover every project on the machine
+- `--force` — overwrite a hand-edited copy
+- `--dry-run` — show what would happen, change nothing
+
+A version marker (`.tamash-selenium-skill`) is written so `mvn exec:java -Dexec.args="doctor"` can flag when the installed skill has fallen behind the package — re-run `init-skill` to refresh.
+
+By hand, if you prefer, the files ship inside the JAR under `skills/tamash-selenium/`:
 
 ```bash
-mvn -q dependency:unpack -Dartifact=com.vibetestq.qtpsudhakar:tamash-selenium:0.1.0-beta.3 \
-  -Dmdep.unpack.includes="skills/**" -DoutputDirectory=.kiro
+mvn -q dependency:unpack -Dartifact=com.vibetestq.qtpsudhakar:tamash-selenium:0.1.0-beta.4 \
+  -Dmdep.unpack.includes="skills/tamash-selenium/**" -DoutputDirectory=.agents/skills
 ```
 
-**Cursor** — its own rule format (`.mdc`, with frontmatter Cursor uses to decide when to attach it). Unpack to a temp dir and copy the adapter:
-
-```bash
-mvn -q dependency:unpack -Dartifact=com.vibetestq.qtpsudhakar:tamash-selenium:0.1.0-beta.3 \
-  -Dmdep.unpack.includes="skills/**" -DoutputDirectory=target/tamash-skill
-mkdir -p .cursor/rules
-cp target/tamash-skill/skills/tamash-selenium/adapters/cursor-tamash-selenium.mdc .cursor/rules/
-```
-
-**GitHub Copilot** — append (or create) its single instructions file:
-
-```bash
-mvn -q dependency:unpack -Dartifact=com.vibetestq.qtpsudhakar:tamash-selenium:0.1.0-beta.3 \
-  -Dmdep.unpack.includes="skills/**" -DoutputDirectory=target/tamash-skill
-mkdir -p .github
-cat target/tamash-skill/skills/tamash-selenium/adapters/copilot-instructions-tamash-selenium.md >> .github/copilot-instructions.md
-```
-
-**Antigravity, Gemini CLI, Windsurf, Zed, Aider, and other `AGENTS.md`-reading tools** — one file covers all of them:
-
-```bash
-cp target/tamash-skill/skills/tamash-selenium/adapters/AGENTS.md ./AGENTS.md
-# or, if AGENTS.md already exists, append its content instead of overwriting
-```
-
-If the project is a git checkout of `tamash-selenium` itself, the files are already at `skills/tamash-selenium/` — copy them directly, no `dependency:unpack` needed. Any of the copy targets above (`.claude/skills/`, `.kiro/skills/`) can also be done once at the user level (`~/.claude/skills/tamash-selenium`, `~/.kiro/skills/tamash-selenium`) to cover every project on the machine instead of one at a time.
+If the project is a git checkout of `tamash-selenium` itself, the files are already at `skills/tamash-selenium/`.
