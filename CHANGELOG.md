@@ -3,6 +3,35 @@
 All notable changes to `tamash-selenium` are documented here. It versions independently of the
 Playwright ports; this first release brings the self-healing engine to Selenium Java.
 
+## [0.2.0] - 2026-09-01
+
+First non-beta release. Functionally identical to `0.1.0-beta.4` — this bump drops the `-beta`
+qualifier now that the engine, the seven providers, `apply-heals`, `doctor`, `init-skill`, and
+both CI pipelines (library + sample) are verified end to end. Still `0.x`: the API (a tiny
+surface — `SelfHealingDriver.wrap` plus the JUnit 5 / TestNG / Cucumber entry points) may still
+evolve before `1.0`, which is gated on real-world mileage across more apps and teams.
+
+Cumulative highlights since `0.1.0-beta.1`:
+
+- **Self-healing for `findElement`** — DOM accessibility snapshot → provider → durable `By`
+  derivation (verified against the live element) → retry. Never masks a genuinely-missing element.
+- **Providers**: `tamash` (rule-based, zero-token, never guesses), `ollama` / `ollama-local`,
+  `openai`, `anthropic`, `gemini`, `claude-subscription`, `copilot-subscription` — all verified.
+- **Integrations**: `@UseTamashSelenium` (JUnit 5), `TamashSeleniumTestNgTest` (TestNG),
+  the `com.vibetestq.qtpsudhakar.tamash.cucumber` glue; plain `SelfHealingDriver.wrap` for any
+  runner. Page Object Model, `TamashPageFactory` / `@FindBy`, and keyword-driven (`Tamash.hint`).
+- **Stale-element recovery** (always on) and **action recovery** (`scroll`/`force`/`wait`/`dispatch`,
+  opt-in via `HEALER_ACTION_RECOVERY_ENABLED`).
+- **`apply-heals`** — rewrites a healed locator into source (`By.x("…")`, `@FindBy(...)`, or a
+  `By field = …` declaration) and writes a `verify-heals` script.
+- **`doctor`** pre-flight checks and **`init-skill`** (installs the coding-agent skill into
+  `.claude/skills/` + `.agents/skills/`).
+- **HTML step report** (`TAMASH_REPORT`), two-tier heal cache, per-test attribution.
+- Apache License 2.0; ~90 unit + ~127 browser tests; public GitHub Pages docs at
+  <https://qtpsudhakarproducts.github.io/tamash-selenium/>.
+
+---
+
 ## [0.1.0-beta.4] - 2026-09-01
 
 Verification build-out, skill install, and open-sourcing.

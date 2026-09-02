@@ -31,7 +31,7 @@ For a shorter overview see [README.md](README.md). This file is the complete ref
 <dependency>
   <groupId>com.vibetestq.qtpsudhakar</groupId>
   <artifactId>tamash-selenium</artifactId>
-  <version>0.1.0-beta.4</version>
+  <version>0.2.0</version>
 </dependency>
 ```
 

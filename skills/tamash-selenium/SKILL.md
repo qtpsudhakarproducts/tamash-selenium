@@ -54,7 +54,7 @@ A version marker (`.tamash-selenium-skill`) is written so `mvn exec:java -Dexec.
 By hand, if you prefer, the files ship inside the JAR under `skills/tamash-selenium/`:
 
 ```bash
-mvn -q dependency:unpack -Dartifact=com.vibetestq.qtpsudhakar:tamash-selenium:0.1.0-beta.4 \
+mvn -q dependency:unpack -Dartifact=com.vibetestq.qtpsudhakar:tamash-selenium:0.2.0 \
   -Dmdep.unpack.includes="skills/tamash-selenium/**" -DoutputDirectory=.agents/skills
 ```
 

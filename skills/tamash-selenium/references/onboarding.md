@@ -87,7 +87,7 @@ If the project uses **TestNG and not JUnit 5**, and `mvn test` suddenly reports 
 <dependency>
   <groupId>com.vibetestq.qtpsudhakar</groupId>
   <artifactId>tamash-selenium</artifactId>
-  <version>0.1.0-beta.4</version>
+  <version>0.2.0</version>
   <exclusions>
     <exclusion>
       <groupId>org.junit.jupiter</groupId>

@@ -76,6 +76,20 @@ roadmap.
 
 ## Per-release notes
 
+### [0.2.0] — first non-beta release — 2026-09-01
+
+No functional change from `0.1.0-beta.4` — the `-beta` qualifier is dropped now that the engine,
+all seven providers, `apply-heals`, `doctor`, `init-skill`, and both CI pipelines are verified end
+to end. Re-verified at the version bump: `mvn test` 90/90, `mvn test -Pbrowser` 127/127,
+`AiHealingE2ETest` via anthropic green. Still `0.x` — API may evolve before `1.0` (gated on
+real-world mileage).
+
+### [0.1.0-beta.4 → sample] — 2026-09-01
+
+The sample repo was bumped to `0.1.0-beta.4` once it resolved on Central; its `apply-heals` CI job
+now runs the real generated `verify-heals.sh`. A pre-existing free-app flake in the TestNG job
+(`AddEmployeePomTest.isSaved()`) was hardened (45s wait + a TestNG `IRetryAnalyzer`).
+
 ### [unreleased] — test parity build-out — started 2026-09-01
 
 Kicked off closing the gap to `tamash-playwright`'s verification bar (see roadmap). Landed so far:
