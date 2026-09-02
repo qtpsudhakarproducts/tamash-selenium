@@ -82,7 +82,8 @@ No functional change from `0.1.0-beta.4` — the `-beta` qualifier is dropped no
 all seven providers, `apply-heals`, `doctor`, `init-skill`, and both CI pipelines are verified end
 to end. Re-verified at the version bump: `mvn test` 90/90, `mvn test -Pbrowser` 127/127,
 `AiHealingE2ETest` via anthropic green. Still `0.x` — API may evolve before `1.0` (gated on
-real-world mileage).
+real-world mileage). Published to Maven Central (deployment `90cf5f52-…`, `PUBLISHED`), tagged
+`v0.2.0` with a GitHub Release; docs site + sample repo on `0.2.0`.
 
 ### [0.1.0-beta.4 → sample] — 2026-09-01
 
